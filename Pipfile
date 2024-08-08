@@ -4,15 +4,15 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-streamlit = "*"
-pandas = "*"
-numpy = "*"
-matplotlib = "*"
-scipy = "*"
-scikit-learn = "*"
-requests = "*"
+streamlit = "==1.37.*"
+pandas = "==2.2.*"
+numpy = "==2.0.*"
+matplotlib = "==3.9.*"
+scipy = "==1.14.*"
+scikit-learn = "==1.5.*"
+requests = "==2.32.*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.11"
+python_version = "==3.11"
