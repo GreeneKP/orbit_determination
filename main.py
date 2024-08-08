@@ -285,7 +285,7 @@ date_format = '%Y-%m-%d %H:%M:%S'
 new_time = datetime.strptime(given_string_time, date_format)
 timestamp_difference = datetime.now() - new_time
 
-if timestamp_difference > timedelta(hours=5):
+if timestamp_difference > timedelta(hours=48):
     satcat = pd.read_csv("https://celestrak.org/pub/satcat.csv")
     satcat.to_csv('data/satcat.csv',header=True,sep=',')
 else: satcat = pd.read_csv("data/satcat.csv")
