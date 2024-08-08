@@ -314,7 +314,7 @@ if submission:
     else: sat_num = number_search
 
     st.write(f"Showing results for {sat_name}, NORAD Satcat Number {sat_num}, owned by {sat_owner_set[satcat['OWNER'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]]}, and launched {satcat['LAUNCH_DATE'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}. For a complete rundown on how to analyze this orbit, refer to the tabs sequentially from left to right. Otherwise, select the tab to best suit your needs, with Pocket Orbital Analyst being the most surface-level, simple report on {sat_name}.")
-    tab1,tab2,tab3,tab4,tab5 = st.tabs(["Basic Orbital Mechanics","Maneuver Detection","Pocket Orbital Analyst",f"{satcat['OBJECT_NAME'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}'s Position",f"{satcat['OBJECT_NAME'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}'s Maneuver Predictions"])
+    tab1,tab2,tab3,tab4,tab5,tab6 = st.tabs(["Basic Orbital Mechanics","Maneuver Detection","Pocket Orbital Analyst",f"{satcat['OBJECT_NAME'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}'s Position",f"{satcat['OBJECT_NAME'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}'s Maneuver Predictions","Hypothesis Testing"])
     
     t1c1, t1c2 = tab1.columns(2)
 
@@ -497,7 +497,7 @@ if submission:
     tab3.header("Satellite B.L.U.F. Analysis:")
     tab3.divider()
     tab3.subheader("Observations")
-    tab3.write(f"For {satcat['OBJECT_NAME'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}, there have been a total of {len(sat_mnvr_df['Date/Time (UTC)'])} observations. The earliest observation in the current available database occured {sat_mnvr_df['Date/Time (UTC)'].iloc[0]} with the most recent occurring at {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]}. Of these observations, {sum(sat_mnvr_df['Maneuver Detected'])} indicate potential maneuvers given changes to Classical Orbital Elements. Of the observed potential maneuvers in the dataset, {sum(sat_mnvr_df['Checkout Period'])} occurred during the first 6 months of the satellites time on orbit which is generally when a number of adjustments are made to initiate intended trajectory which could otherwise skew data trying to capture nominal on-orbit operations. Observations for this satellite by NORAD tend to be collected at an average interval of {round(np.mean(sat_mnvr_df['Date/Time (UTC) Delta'][1:])/3600, 2)} hours.")
+    tab3.write(f"For {satcat['OBJECT_NAME'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}, there have been :orange[a total of {len(sat_mnvr_df['Date/Time (UTC)'])} observations]. The earliest observation in the current available database occured {sat_mnvr_df['Date/Time (UTC)'].iloc[0]} with the most recent occurring at {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]}. Of these observations, :green[{sum(sat_mnvr_df['Maneuver Detected'])} indicate potential maneuvers given changes to Classical Orbital Elements]. Of the observed potential maneuvers in the dataset, :red[{sum(sat_mnvr_df['Checkout Period'])} occurred during the first 6 months of the satellites time on orbit] which is generally when a number of adjustments are made to initiate intended trajectory which could otherwise skew data trying to capture nominal on-orbit operations. Observations for this satellite by NORAD tend to be collected at an :blue[average interval of {round(np.mean(sat_mnvr_df['Date/Time (UTC) Delta'][1:])/3600, 2)} hours].")
     #add a section to account for frontloading maneuvers during orbit insertion.
     regime_descr = {"Low Earth Orbit (LEO)":"These satellites move at a high velocity relative to the earth, circling the planet about 14-16 times a day. They require the lowest power budget to contact, but their field of view is small relative to satellites in higher orbital regimes, requiring the greatest number of satellites to achieve a globally effective constellation."
                     ,"Medium Earth Orbit (MEO)":"These satellites are situated safely between the Earths two Van Allen Radiation belts whose radiation is otherwise a detriment to most satellites lifespans. These satellites circle the planet every 12 hours which makes their frequency less potent than satellites in Low Earth Orbit, however, these satellites are far enough from the planet to be afforded a much larger Field of View. As a result, most Navigation satellites are primarily in this orbital regime to include GPS and GLONASS."
@@ -524,7 +524,7 @@ if submission:
         regime = "Sun-Synchronous Orbit (SSO)"
     tab3.divider()
     tab3.subheader("Regime")
-    tab3.write(f"With a SemiMajor Axis of approximately {round(np.mean(sat_mnvr_df['SMA']),2)} kilometers, {satcat['OBJECT_NAME'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]} is in a {regime}. {regime_descr[regime]}")
+    tab3.write(f"With a SemiMajor Axis of approximately {round(np.mean(sat_mnvr_df['SMA']),2)} kilometers, :blue[{satcat['OBJECT_NAME'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]} is in a {regime}]. {regime_descr[regime]}")
 
     tab2.write(f"Time to flex your newfound skills as an Orbital Analyst! Check out the SMA and Eccentricity of {sat_name}, the satellite you just ran. To orient you to the graphs, white dots indicate position while the red triangles and blue stars indicate detection of Intrack or Compound (both Intrack AND Crosstrack) maneuvers respectively... You probably notice some white 'tails' trailing behind the red triangles and blue stars (if there ARE any!). This indicates that an Intrack maneuver happened at that time and then, as of the next observation, the SMA/Eccentricity was different! Now, looking just at the SMA graph and knowing what you now know about how Positive Intrack Maneuvers increase SMA while Negative Intrack Maneuvers decrease SMA, just by looking at where the while tail shifts after a Maneuver, you can tell if the Maneuver was Positive or Negative! on the SMA graph, if the next 'tail' is above the detected maneuver, it was a Positive Intrack Maneuver, whereas the opposite is true of a Negative Intrack Maneuver! You probably also noticed some yellow circles on the graph too; These indicate detection of a Crosstrack Maneuver and are what we're going to focus on next...")
 
@@ -714,7 +714,7 @@ if submission:
     tab3.subheader("Maneuver History")
 
     nsmnvrs = sat_mnvr_df[sat_mnvr_df['N/S Maneuver'] == True].copy()
-    tab3.write(f"The following are all N/S maneuvers. In quick summation, this vehicle has done a total of {len(nsmnvrs['Date/Time (UTC)'])} N/S maneuvers, with it's earliest in the database being {nsmnvrs['Date/Time (UTC)'].iloc[0]} and the latest being {nsmnvrs['Date/Time (UTC)'].iloc[-1]}.")
+    tab3.write(f"The following are all N/S maneuvers. In quick summation, this vehicle has done a total of :orange[{len(nsmnvrs['Date/Time (UTC)'])} N/S maneuvers], with it's earliest in the database being {nsmnvrs['Date/Time (UTC)'].iloc[0]} and the latest being {nsmnvrs['Date/Time (UTC)'].iloc[-1]}.")
 
 
     nsmnvrs.index = range(len(nsmnvrs['Date/Time (UTC)']))
@@ -736,15 +736,15 @@ if submission:
 
     tab3.write(nsmnvrs)
     if nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj > datetime.now():
-        tab3.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver should occur around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}. For higher fidelity, continue to the Maneuver Prediction section.")
+        tab3.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :green[should occur] around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}. For higher fidelity, continue to the Maneuver Prediction section.")
     elif sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']) > 0.1:
-        tab3.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver should have occured around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}; However, {round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period, while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
-    else: tab3.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver should have occured {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
+        tab3.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :red[should have occured] around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}; However, :orange[{round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period], while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
+    else: tab3.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :red[should have occured] {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
 
 
     ewmnvrs = sat_mnvr_df[sat_mnvr_df['E/W Maneuver'] == True].copy()
     tab3.divider()             
-    tab3.write(f"The following are all E/W maneuvers. In quick summation, this vehicle has done a total of {len(ewmnvrs['Date/Time (UTC)'])} E/W maneuvers, with it's earliest in the database being {ewmnvrs['Date/Time (UTC)'].iloc[0]} and the latest being {ewmnvrs['Date/Time (UTC)'].iloc[-1]}")
+    tab3.write(f"The following are all E/W maneuvers. In quick summation, this vehicle has done a total of :red[{len(ewmnvrs['Date/Time (UTC)'])} E/W maneuvers], with it's earliest in the database being {ewmnvrs['Date/Time (UTC)'].iloc[0]} and the latest being {ewmnvrs['Date/Time (UTC)'].iloc[-1]}")
 
     ewmnvrs.index = range(len(ewmnvrs['Date/Time (UTC)']))
     show_deltas(ewmnvrs)
@@ -766,10 +766,10 @@ if submission:
     
     tab3.write(ewmnvrs)
     if ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj > datetime.now():
-        tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver should occur around {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}. For higher fidelity, continue to thew Maneuver Prediciton section.")
+        tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :green[should occur] around {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}. For higher fidelity, continue to thew Maneuver Prediciton section.")
     elif sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']) > 0.1:
-        tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver should have occured {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}.However, {round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period, while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
-    else: tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver should have occured {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}.This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
+        tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have occured] {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}. However, :orange[{round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period], while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
+    else: tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have occured] {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
 
     time_delta_sec =[]
     for i in range(len(sat_mnvr_df['Date/Time (UTC) Delta'])):
@@ -940,6 +940,147 @@ if submission:
     elif sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']) > 0.1:
         tab5.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver should have occured around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}; However, {round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period, while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
     else: tab5.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver should have occured {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
+
+    tab6.subheader("Understanding the Sample")
+    tab6.write("Generally, when conducting a hypothesis test, it's important to make the distinction that you're working with either the population or a sample thereof... This is where the limitations of our tool will begin to show themselves, though not without answer.")
+    tab6.write("First of all, the scope of available data tends to go back around 2 years for each satellite. If the satellite was launched before then, it becomes clear that we're only looking at a sample, as maneuvers conducted prior to available data would not be included in our set. If the vehicle was launched within that window, we have a higher likelihood of actually capturing the population in its entirety, however, this can prove fairly disadvantageous too.")
+    tab6.write("Something you learn in the trade is that most satellites have a 'check-out period' when they first go up where their functionality, mission, and trajectory are all being initialized for nominal operations later. As such, maneuvers conducted during this time period have a high likelihood of looking very different that maneuvers once nominal operations, and this period varies largely from satellite to satellite, sometimes being as small as a week and other times as large as a year, all of which can serve to skew the accuracy of predictions once nominal operations begin. Mind you, while this tool won't parse out data on the basis of proximity to a satellites launch date, it WILL issue a warning in the Pocket Orbital Analyst tab, telling you what percentage of recorded maneuvers occurred during the first 6 months of a satellites time on orbit, leaving you to trust or reject the prediction on that basis.") 
+    tab6.write("Another great indicator that we're dealing with a sample rather than the population is how this tool determines what constitutes a maneuver... Primarily, it uses variance in Classical Orbital Element (for Intrack and Crosstrack Maneuvers Separately,) and compares that to the usual changes from observation to observation. If the corresponding elements which would indicate a maneuver have occurred with a delta that exceeds one standard deviation of the usual delta, it assumes a maneuver has occurred.")
+    tab6.write("While this is serviceable for most satellites, this can be problematic in two very specific cases: Vehicles that maneuver all the time (specifically amid more than 32% of observations,) and vehicles that cannot maneuver at all. In the case of the former, this tool will have difficulty in determining the signal from the noise. Additionally, in vehicles that cannot maneuver, this tool will likely assume that issues in position measurement or accelerative Classical Orbital Element changes due to natural perturbations are actually maneuvers. Both these issues can be resolved in the next iteration of this tool, which will calculate and superimpose J2,3, and 4 Perturbations to model motion in space more accurately such that deviations from that can be better attributed to maneuvers.") 
+    tab6.write("Finally, given that the tool uses changes between observations to determine if a maneuver occurred, if there's a greater time between observations, there's also a greater gap in position between observations as a result of natural motion. With that in mind, any observation that exceeds 3 standard deviations from the normal gap will not be counted as a maneuver to get rid of any 'maneuvers' that are just a result of outliers in observation consistency... This, however, doesn't mean that a maneuver didn't occur during that time, as that's still very well possible.")
+    tab6.write("With all this in mind, it becomes evident that it's best to always treat our data, no matter how robust it may look, as a sample when hypothesis testing.")
+
+    nsmnvrs_delta= nsmnvrs.copy()
+    ewmnvrs_delta= ewmnvrs.copy()
+
+    for col in nsmnvrs_delta.columns[0:7]:
+            for i in range(1,len(nsmnvrs_delta[f'{col} Delta'])):
+                nsmnvrs_delta[f'{col} Delta'].iloc[i] = abs(nsmnvrs_delta[col].iloc[i] - nsmnvrs_delta[col].iloc[i-1])
+    nsmnvrs_delta= nsmnvrs_delta.drop(columns=['Time Residuals',
+                                               'Checkout Period',
+                                               'Maneuver Profile',
+                                               'Maneuver Detected',
+                                               'E/W Maneuver',
+                                               'Date/Time (UTC) Delta',
+                                               'Period',
+                                               'Period Delta'])
+    
+    for col in ewmnvrs_delta.columns[0:7]:
+            for i in range(1,len(ewmnvrs_delta[f'{col} Delta'])):
+                ewmnvrs_delta[f'{col} Delta'].iloc[i] = abs(ewmnvrs_delta[col].iloc[i] - ewmnvrs_delta[col].iloc[i-1])
+    ewmnvrs_delta= ewmnvrs_delta.drop(columns=['Time Residuals',
+                                               'Checkout Period',
+                                               'Maneuver Profile',
+                                               'Maneuver Detected',
+                                               'N/S Maneuver',
+                                               'Date/Time (UTC) Delta',
+                                               'Period',
+                                               'Period Delta'])
+    
+    tab6.divider()
+    tab6.header("Hypothesis Tests")
+    tab6.write("Our Hypothesis is that Classical Orbital Elements can be used as a metric to predict when future maneuvers will occur... Let's see if we're right!")
+
+    tab6.divider()
+    tab6.header("For N/S Maneuver Pearson Correlation...")
+    tab6.write(nsmnvrs_delta)
+    nsdependencies=[]
+    for col in nsmnvrs_delta.columns[1:-1]:        
+        tab6.subheader(f'{col}')
+        data1=nsmnvrs_delta[col]
+        data2=nsmnvrs_delta['Time Between Maneuvers']
+        stat, p = scistats.pearsonr(data1,data2)
+        tab6.write('stat=%.3f, p=%.3f' % (stat, p))
+        if p > 0.05:
+            tab6.write(f'{col} likely does :red[NOT] correspond with Time between Maneuvers for N/S Maneuvers and should :red[not] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
+        else: 
+            tab6.write(f'{col} likely :green[corresponds] with Time between Maneuvers for N/S Maneuvers and :green[should] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
+            nsdependencies.append(col)
+        tab6.divider()
+
+    tab6.header("For E/W Maneuver Pearson Correlation...")
+    tab6.write(ewmnvrs_delta)
+    ewdependencies=[]
+    for col in ewmnvrs_delta.columns[1:-1]:
+        tab6.subheader(f'{col}')
+        data1=ewmnvrs_delta[col]
+        data2=ewmnvrs_delta['Time Between Maneuvers']
+        stat, p = scistats.pearsonr(data1,data2)
+        tab6.write('stat=%.3f, p=%.3f' % (stat, p))
+        if p > 0.05:
+            tab6.write(f'{col} likely does :red[NOT] correspond with Time between Maneuvers for E/W Maneuvers and should :red[not] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
+        else: 
+            tab6.write(f'{col} likely :green[corresponds] with Time between Maneuvers for E/W Maneuvers  and :green[should] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
+            ewdependencies.append(col)
+        tab6.divider()
+
+    tab6.header("Hypothesis Test Summary")
+    tab6.write(f"In summation, based on the available data for {sat_name}, of the 20 total tests run against different Classical Orbital Elements and their changes, with :orange[{len(nsdependencies)} total significant parameters] of 10 possible, the Classical Orbital Elements that can best be used to determine N/S Maneuvers are :orange[{nsdependencies}], whereas with :red[{len(ewdependencies)} total significant parameters] of 10 possible, the factors that can be best used to determine E/W Maneuvers are :red[{ewdependencies}].")
+
+
+    
+
+
+
+    for col in ewmnvrs.columns[3:6]:
+        colors = {'None':'w', 'Compound Maneuver':'c', 'Intrack Maneuver':'r', 'Crosstrack Maneuver':'y'}
+        size = {'None':5, 'Compound Maneuver':50, 'Intrack Maneuver':50, 'Crosstrack Maneuver':50}
+        mark = {'None':'.', 'Compound Maneuver':'*', 'Intrack Maneuver':'>', 'Crosstrack Maneuver':'o'}
+        opacity = {'None':0.2, 'Compound Maneuver':1, 'Intrack Maneuver':1, 'Crosstrack Maneuver':1}
+        fig, ax = plt.subplots()
+        datax=ewmnvrs['Date/Time (UTC)']
+        datay=ewmnvrs[col]
+        ax.plot(datax, 
+               datay,
+               color='r')
+        ax.set_title(f'{col} vs Time',size=30) 
+        ax.set_xlabel('Epoch', size = 20) 
+        if col == 'SMA': 
+            ax.set_ylabel(f'{col} (Kilometers)', size = 20)
+        elif col == 'Period':
+            ax.set_ylabel(f'{col} (Seconds)', size = 20)
+        elif col == 'Eccentricity':
+            ax.set_ylabel(f'{col}', size = 20)
+        else: ax.set_ylabel(f'{col} (Degrees)', size = 20)
+        ax.grid(axis='y',color='white')
+        ax.grid(which='minor',axis='x',color='white')
+        fig.tight_layout()
+        fig.set_figwidth(20)
+        fig.set_figheight(10)
+        ax.set_facecolor('black')
+        fig.set_facecolor('white')
+        tab6.pyplot(fig)
+
+    for col in nsmnvrs.columns[1:3]:
+        colors = {'None':'w', 'Compound Maneuver':'c', 'Intrack Maneuver':'r', 'Crosstrack Maneuver':'y'}
+        size = {'None':5, 'Compound Maneuver':50, 'Intrack Maneuver':50, 'Crosstrack Maneuver':50}
+        mark = {'None':'.', 'Compound Maneuver':'*', 'Intrack Maneuver':'>', 'Crosstrack Maneuver':'o'}
+        opacity = {'None':0.2, 'Compound Maneuver':1, 'Intrack Maneuver':1, 'Crosstrack Maneuver':1}
+        fig, ax = plt.subplots()
+        datax=nsmnvrs['Date/Time (UTC)']
+        datay=nsmnvrs[col]
+        ax.plot(datax, 
+               datay,
+               color='y')
+        ax.set_title(f'{col} vs Time',size=30) 
+        ax.set_xlabel('Epoch', size = 20) 
+        if col == 'SMA': 
+            ax.set_ylabel(f'{col} (Kilometers)', size = 20)
+        elif col == 'Period':
+            ax.set_ylabel(f'{col} (Seconds)', size = 20)
+        elif col == 'Eccentricity':
+            ax.set_ylabel(f'{col}', size = 20)
+        else: ax.set_ylabel(f'{col} (Degrees)', size = 20)
+        ax.grid(axis='y',color='white')
+        ax.grid(which='minor',axis='x',color='white')
+        fig.tight_layout()
+        fig.set_figwidth(20)
+        fig.set_figheight(10)
+        ax.set_facecolor('black')
+        fig.set_facecolor('white')
+        tab6.pyplot(fig)
+
+
 
    # fig, axs = plt.subplots()
    # x=cond_df['Date/Time (UTC)']
