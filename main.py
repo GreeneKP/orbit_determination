@@ -941,15 +941,24 @@ if submission:
         tab5.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver should have occured around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}; However, {round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period, while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
     else: tab5.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver should have occured {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
 
+   # fig, axs = plt.subplots()
+   # x=cond_df['Date/Time (UTC)']
+   # axs.plot(x,cond_df['E/W Maneuver Likelihood'])
+   # axs.plot(x,cond_df['N/S Maneuver Likelihood'])
+   # fig.set_figwidth(20)
+   # fig.set_figheight(10)
+   # axs.set_facecolor('black')
+   # fig.set_facecolor('white')
+   # tab5.pyplot(fig)
 
-    modelns= LinearRegression()
-    yns=nsmnvrs['Date/Time (UTC)']
-    for col in cond_df.columns[1:7]:
-        xns=nsmnvrs[col]
-        modelns.fit(xns,yns)
-        modelns.predict([[2]])
-        modelns.coef_
-        modelns.intercept_
+    #modelns= LinearRegression()
+    #yns=nsmnvrs['Date/Time (UTC)']
+    #for col in cond_df.columns[1:7]:
+    #    xns=nsmnvrs[col]
+    #    modelns.fit(xns,yns)
+    #    modelns.predict([[2]])
+    #    modelns.coef_
+    #    modelns.intercept_
 
 
    # for i in range(1,501):
