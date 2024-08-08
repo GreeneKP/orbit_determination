@@ -8,11 +8,11 @@ streamlit = "*"
 pandas = "*"
 numpy = "*"
 matplotlib = "*"
-scipy = "==1.14.0"
+scipy = "*"
 scikit-learn = "*"
 requests = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "==3.11"
+python_version = "*"
