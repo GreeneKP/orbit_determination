@@ -135,7 +135,7 @@ def mean_report(dframe):
 def standardized_choice(array): 
     contextualmean= np.mean(array)
     contextualstd= stats.stdev(array)
-    outcome= -1000
+    outcome= -100000000000
     while outcome > contextualmean + contextualstd or outcome < contextualmean - contextualstd:
         outcome = bootstrap_bill(array,1)[0]
     return outcome
@@ -285,7 +285,7 @@ date_format = '%Y-%m-%d %H:%M:%S'
 new_time = datetime.strptime(given_string_time, date_format)
 timestamp_difference = datetime.now() - new_time
 
-if timestamp_difference > timedelta(hours=48):
+if timestamp_difference > timedelta(hours=5):
     satcat = pd.read_csv("https://celestrak.org/pub/satcat.csv")
     satcat.to_csv('data/satcat.csv',header=True,sep=',')
 else: satcat = pd.read_csv("data/satcat.csv")
@@ -493,6 +493,8 @@ if submission:
     tab4.divider()
     tab4.write("The following consists of all observations available in the NORAD database.")
     tab4.write(sat_mnvr_df)
+
+
 
     tab3.header("Satellite B.L.U.F. Analysis:")
     tab3.divider()
@@ -775,7 +777,7 @@ if submission:
     for i in range(len(sat_mnvr_df['Date/Time (UTC) Delta'])):
         time_delta_sec.append(sat_mnvr_df["Date/Time (UTC) Delta"].iloc[i])
 
-    cond_df=pd.DataFrame(columns=sat_mnvr_df.columns[:7], index=range(0,501))
+    cond_df=pd.DataFrame(columns=sat_mnvr_df.columns[:7], index=range(0,201))
     for col in cond_df.columns[0:7]:
         cond_df[col].iloc[0]=sat_mnvr_df[col].iloc[-1]
 
@@ -794,17 +796,36 @@ if submission:
 
     for col in cond_df.columns[1:7]:
         std_choices=[]
-        for i in range(501):
+        for i in range(201):
             std_choices.append(standardized_choice(nonabs_df[f'{col} Delta']))
-        for i in range(1,501):
-           cond_df[col].iloc[i] = cond_df[col].iloc[i-1] + bootstrap_bill(std_choices,1)
+        for i in range(1,201):
+            cond_df[col].iloc[i] = cond_df[col].iloc[i-1] + bootstrap_bill(std_choices,1)
+            if col == 'Arg of Perigee' or col == 'RAAN':
+                if cond_df[col].iloc[i] < 0:
+                   cond_df[col].iloc[i] += 360
+                if cond_df[col].iloc[i] > 360:
+                   cond_df[col].iloc[i] -= 360
+            if col == 'Inclination':
+                if cond_df[col].iloc[i] < 0:
+                   cond_df[col].iloc[i] += 180
+                if cond_df[col].iloc[i] > 180:
+                   cond_df[col].iloc[i] -= 180
+
+   ## for i in range(10):
+   #     tab5.write(random.choice(sat_mnvr_df['Date/Time (UTC) Delta']))
+   #     tab5.write(type(random.choice(sat_mnvr_df['Date/Time (UTC) Delta'])))
+#
+   # tab5.write('sat_mnvr time delta type is:')
+   # tab5.write(type(sat_mnvr_df['Date/Time (UTC) Delta'].iloc[0]))
+#
+
     
-    for i in range(len(cond_df['RAAN'])):
-        if cond_df['RAAN'].iloc[i] < 0:
-            cond_df['RAAN'].iloc[i] += 360
 
     for i in range(1,len(cond_df['Date/Time (UTC)'])):
-        cond_df['Date/Time (UTC)'].iloc[i] = cond_df['Date/Time (UTC)'].iloc[i-1] + timedelta(seconds=standardized_choice(nonabs_df['Date/Time (UTC) Delta']))
+        second_offset= standardized_choice(time_delta_sec)
+        cond_df['Date/Time (UTC)'].iloc[i] = cond_df['Date/Time (UTC)'].iloc[i-1] + timedelta(seconds = second_offset)
+
+   
 
     #st.write((cond_df["Date/Time (UTC)"].iloc[0])+timedelta(seconds=10000000))
 
@@ -893,10 +914,10 @@ if submission:
 
 
     if ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj > datetime.now():
-        tab5.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver should occur around {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}. Looking purely at Maneuver frequency.")
+        tab5.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :green[should occur around {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}]. Looking purely at Maneuver frequency.")
     elif sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']) > 0.1:
-        tab5.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver should have occured {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}. However, {round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period, while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
-    else: tab5.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver should have occured {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
+        tab5.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have occured {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}]. However, :orange[{round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period], while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
+    else: tab5.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have occured {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}]. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
 
 
     tab5.divider()
