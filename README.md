@@ -3,11 +3,17 @@
 ## Packages
 
 This application requires access to the following packages to run locally:
+
 streamlit - 1.36
+
 pandas - 2.1
+
 numpy - 1.26
+
 matplotlib - 3.8
+
 scipy - 1.13
+
 requests - 2.31
 
 
