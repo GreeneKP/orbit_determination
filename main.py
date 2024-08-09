@@ -277,11 +277,13 @@ st.title("Satellite Maneuver Predictor")
 #(5 hrs) to re-pull the data, per Dr. Kelso to avoid this being seen as a DDOS attack.
 #If the condition to pull a new file has been met, it not only reads the file, but also
 #immediately files it away to reset the 5-hour clock so we play nicely with our NORAD friends.
+#that being said, I pushed this out to 48 hours since frankly the satcat doesn't get updated
+#all that often.
 given_string_time = pd.read_csv("data/sat_pos_history.csv")['Timestamp'].iloc[0][:19]
 date_format = '%Y-%m-%d %H:%M:%S'
 new_time = datetime.strptime(given_string_time, date_format)
 timestamp_difference = datetime.now() - new_time
-if timestamp_difference > timedelta(hours=5):
+if timestamp_difference > timedelta(hours=48):
     satcat = pd.read_csv("https://celestrak.org/pub/satcat.csv")
     satcat.to_csv('data/satcat.csv',header=True,sep=',')
 else: satcat = pd.read_csv("data/satcat.csv")
