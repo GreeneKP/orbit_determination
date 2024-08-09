@@ -1,6 +1,6 @@
-##Orbit Predictor
+## Orbit Predictor
 
-#Packages
+# Packages
 
 This application requires access to the following packages to run locally:
 streamlit - 1.36
@@ -11,19 +11,19 @@ scipy - 1.13
 requests - 2.31
 
 
-#File Overview
+# File Overview
 
 This application is broken into 5 tabs which populate on the basis of the user input Satellite. As such, right at the outset, the functionality of the tool is dependent on outside sources and/or pre-existing, on-hand files, being the NORAD Satellite Catalog (saved as satcat.csv in the data folder and assigned the variable name “satcat” once read-in) and the selected vehicles positional history (taken from https://celestrak.org/NORAD/elements/graph-orbit-data.php?CATNR={sat_num} where CATNR is the Satellite Catalog number inputted by the user, saved as sat_pos_history.csv in the data folder and assigned the variable name “sat_mnvr_df” once read-in). Note that regardless of the satellite chosen by the user, the file “sat_pos_history.csv” is the output name, resulting in an over-write. This is intentional as it keeps from cluttering the data folder and helps with consistent recall later. Before exporting this file to the data folder however, it is given a timestamp of the current time. In turn, the code reads that time into a datetime object to compare with now to determine whether or not we can justifiably request another of the same file from the database should the user run the same satellite twice. Assuming you’re running the same vehicle, the time between now, when the app is run, and the prior imputed timestamp exceeds 5 hours, the app will do another request for the same file. Otherwise, it will use the on-hand file. Finally, of course, if you’re looking at a completely different satellite it will happily pull agnostic of the time difference as pulling a different file effectively resets the download-limit-timer from NORAD’s perspective. In so doing, the basis of how this code works without upsetting NORAD is a time-based loop where the data for an individual satellite is saved and the tool as far as that satellite is concerned, becomes self-serving in regards to that satellite no matter how many times it’s run for the duration of the 5 hour window.
 
-#Tab Layout
+# Tab Layout
 
 The 5 aforementioned tabs are Basic Orbital Mechanics, Maneuver Detection, Pocket Orbital Analyst, [Satellite] Position, [Satellite] Maneuver Prediction, and Hypothesis Testing. I wanted to organize with tabs rather than pages to cut down on intermittent loading time, instead just having it load all at once at the outset. Additionally, this spares me the headache of trying to share variables and dataframes across multiple files. As stated in the blurb after the users first click “Find Maneuvers”, a surface-level analysis for the layman who doesn’t really care about the “How”, but instead just the “What”, is in Pocket Orbital Analyst, the third tab; Otherwise, it is recommended that the user click the tabs from left to right to orient themselves to the process and learn as they go.
 
-#Basic Orbital Mechanics
+# Basic Orbital Mechanics
 
 The first tab, as of this version (subject to change as I insert manipulatable 3D models from CZML and Poliastro!) uses entirely in-house objects with zero-dependency on computed data etc. consisting entirely of expository text and images (from the on-hand images folder) expertly crafted in Microsoft Paint. This section introduces the Classical Orbital Elements we use to describe the orientation of a satellites orbit and the satellites position therein, which are concepts that are continually built on in later tabs. One advantage of this from a user-experience perspective is that it loads almost instantaneously when the tool is run, giving the user something to engage with, perhaps not even noticing that the rest of the tabs are still loading in the background.
 
-#Maneuver Detection
+# Maneuver Detection
 
 The second tab describes how the tool determines whether or not a maneuver occurred. The process is as follows:
 'Did someone drive my car today?' may seem like an innocuous way to describe maneuver detection, but bear with the analogy... There are a couple ways to determine if someone drove my car today. If I drove it, I have first-hand experience, so there's one way! Another is if my wife's nice enough to to tell me she drove my car to the store today. Assuming, however, I don't have access to the odometer, the only other way is to open the door to my garage and check if my car is there or not. Our means of maneuver detection, in this case, is exactly that; Where every data point is NORAD opening the 'garage door' to see if the satellites are all where we expect them to be since we last checked... If they're not, we can assume someone took'em for a joyride! Detecting a difference is only one piece of the puzzle though; The other is determining the nature of the change!
@@ -46,15 +46,15 @@ Now, if the 'axel' we mentioned is where the 'gyro' is the LEAST resistant to ch
 
 This tab also starts to introduce the user to the data from the satellite they input, describing what they may be seeing in the graphs by implementing these newly introduced analysis techniques. Mind you, this portion is somewhat a shot in the dark insomuch that the graph shown here may or may not apply to the text depending on the motion of the satellite that was run. i.e. when I describe the ‘white tails’ that trail behind an Intrack maneuver, that may not apply at all if the satellite that was run has no recorded history of Intrack maneuvers or, alternatively, the tails may be so saturated with CrossTrack maneuvers that it will appear yellow (since yellow indicates CrossTrack maneuvers) rather than white as described.
 
-#Pocket Orbital Analyst
+# Pocket Orbital Analyst
 
 As mentioned at the start, Tab 3 is more or less a text-summary of what most people are looking for when they’re asking about a satellite. This tab describes the total observations we have on the satellite, the detected maneuvers, the latest and earliest observation, the orbital regime the user-input satellite is in with an indicator as to the advantages of that regime, and provides a maneuver history with a rough-wag at when the next E/W and N/S maneuvers should occur respectively, this time based purely on frequency, while ushering the user to subsequent tabs for a higher fidelity estimate for maneuver prediction.
 
-#Satellite Position
+# Satellite Position
 
 Tab4 is a straightforward look at all available observations, first in the form of the “Sat_mnvr_df” we created earlier, then in terms of graphs showing changes to each Classical Orbital Element over time. This is the tab that a professional Orbital Analyst would probably hangout at the most.
 
-#Satellite Maneuver Prediction
+# Satellite Maneuver Prediction
 
 Tab5 has a strong argument as the most complex in the application. Our overall goal in this tab is to show WHEN a vehicle is most likely to maneuver given its current, untampered trajectory using usual Classical Orbital Element conditions when the vehicles has previously maneuvered as our guide. First, in order to predict future observations, it creates a dataframe where the first index is the LAST index of our “sat_mnvr_df”. It then procedurally generates 200 artificial ‘future observations’ from this starting point by pulling changes in data from the sat_mnvr_df (actual, real observations) dataframe. So as to show realistic consistency while avoiding kneejerk motions that would otherwise superimpose a maneuver (bear in mind that our goal here is not to predict HOW a maneuver would change a Classical Orbital Element, but instead, how Classical Orbital Elements influence WHEN a vehicle maneuvers,) the app bootstraps these changes, but only provided they are within one standard deviation from the mean in terms of change. This way drastic changes that otherwise indicate a maneuver should not be superimposed over our predictive observations. It is important also to bear in mind the scale difference (namely along the x axis) between these graphs and thew ones on the previous tab. These graphs only show the next 200 observations (usually 3-10 months), whereas the graphs on the previous tab show total history up until now, consisting of years in some cases. As such, slope and shape may look inconsistent at first, between the two, but in reality, if you were to “zoom in” on a portion of the corresponding graph on Tab4, you’ll likely notice the same changes to that Orbital Element over the same period of time as on Tab5, just on a more “squished” scale. This tab also introduces a new color gradient to our graphs, seeing when conditions for a maneuver have been met amid the artificial observations (determined by checking if the vehicle is within 1 standard deviation of each condition that it maneuvers at, seen in the charts on Tab3). As the color gets closer to maroon, the likelihood that the vehicle will do a corresponding E/W maneuver then reaches its highest. You can see in the chart on this tab which observations have met maneuver criteria.
 
@@ -62,7 +62,7 @@ Tab5 has a strong argument as the most complex in the application. Our overall g
 (Instead of just using ROYGBIV here, with the sum of binary “were conditions met?” factors determining likelihood, my intent in future versions is to take the corollary information from the Pearson tests on the next tab and, provided the p value is low enough, make the likelihood color scale a gradient associated with both the presence of the condition AND how MUCH that Orbital Element, as a feature, historically relates to maneuvering for the satellite. If a satellite ALWAYS 100% of the time does an Intrack maneuver when it’s SMA drops to 42160 kms, for example, that should be weighed more heavily than it maneuvering 70% of the time when it’s Eccentricity reaches 0.00005)
 
 
-#Hypothesis Testing
+# Hypothesis Testing
 
 Tab6 introduces the Hypothesis test as well as some pitfall of the application itself. Generally, when conducting a hypothesis test, it's important to make the distinction that you're working with either the population or a sample thereof... This is where the limitations of our tool will begin to show themselves, though not without answer.
 
