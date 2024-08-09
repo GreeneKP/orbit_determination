@@ -9,6 +9,8 @@ streamlit run main.py
 
 #All imports first.
 
+
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -20,75 +22,26 @@ from datetime import datetime, timedelta
 from io import StringIO
 import statistics as stats
 import scipy.stats as scistats
-from sklearn.linear_model import LinearRegression
 
 
 
-#Functions next
+#Functions next...             
 
-def make_draws(dist, params, size=200):
-    """
-    Draw a sample from a specified distribution
-    with given parameters and return these in an array.
 
-    Parameters
-    ----------
 
-    dist: scipy.stats distribution object:
-      Distribution object from scipy.stats, must have a .rvs method
-
-    params: dict:
-      Parameters needed to define the distribution dist.
-    For example, if dist = scipy.stats.binom, then params could be
-
-          {'n': 100, 'p': 0.25}
-
-    size: int:
-      The number of values to draw
-
-    Returns
-    -------
-    sample: np.array, shape (size, )
-      An i.i.d sample from the specified distribution.
-    """
-    
-
-    return dist(**params).rvs(size)                 
-
+#This one returns bootstrap samples given an array; 
+#Used a lot throughout the file.
+#Also references Pirates of the Carribean....
 def bootstrap_bill(array, num_bootstrap_samples=500):
-    """Draw bootstrap resamples from the array x.
-
-    Parameters
-    ----------
-    x: np.array, shape (n, )
-      The data to draw the bootstrap samples from.
-    
-    num_bootstrap_samples: int
-      The number of bootstrap samples, each is built by sampling from x with replacement.
-    
-    Returns
-    -------
-    bootstrap_samples: a list of np.ndarray with length number_bootstrap_samples.
-      The bootstrap resamples from x.
-    """
     return np.random.choice(array, size=num_bootstrap_samples, replace=True)
 
-def plot_means(dist, params, size=200, repeat=5000):
-    fig, ax = plt.subplots()
-    
-    samples = np.zeros((repeat, size))
-    # a placeholder for all sampled data
-    for idx in range(repeat):
-        samples[idx,:] = make_draws(dist, params, size=size)
-        # assign each row a sample
-    sample_means = np.mean(samples, axis=1)
-    # obtain the sample mean for each sample (each row)
-    ax.hist(sample_means, bins=25)
-    # plot the sample means on the given axis
-    
 
-    return dist(**params).rvs(size)
-
+#This one is only used once, to get the data I want out of the zipresponse.text
+#The output is later sent hrough StringIO and then read in as a csv file to be manipulated.
+#It's tough to describe without seeing exactly WHY it's necessary, save to say the
+#substrings indicated below basically represent the left and right margins of the data I
+#actually want, so I use them to define the bounds of what I want, then replace the internal
+#pipe with a line to be better recognized as the delineator between columns in the csv.
 def fetch_csv_data(strinput):
     # initializing substrings
     sub1 = "var plotData = "
@@ -108,6 +61,13 @@ def fetch_csv_data(strinput):
     # get result
     return final_out
 
+
+#Given a string that represents time, in YYYY mm dd hh:mm:ss format,
+#this function spits out a datetime object. This became particularly
+#pertinent, as without it, when trying to graph time, it understands
+#the unmanipulated 'datetime' as a string; arbitrary and categorical
+#in nature. This resulted in graphing times completely out of order,
+#hence necessitating a function to be called on later.
 def time_parser(datalst):
     new_time = None
 
@@ -117,37 +77,56 @@ def time_parser(datalst):
     new_time = datetime.strptime(given_string_time, date_format)
     return new_time
 
+
+#Given the orbital parameters from our dataset, this function creates
+#an additional column for each column already present, now calculating
+#how much the given parameter has changed since the last observation.
+#i.e. if date/time at index1 was 2024-08-08 12:00:00 and date/time at 
+#index2 was 2024-08-08 13:00:00, date/time delta at index 2 would be 
+#3600 seconds since that represents the time between the two observations.
 def show_deltas(dataframe):
     for col in dataframe.columns[:7]:
             dataframe[f'{col} Delta']= None
             for i in range(1,len(dataframe[f'{col} Delta'])):
                 dataframe[f'{col} Delta'].iloc[i] = abs(dataframe[col].iloc[i] - dataframe[col].iloc[i-1])
 
-def mean_report(dframe):
-        for col in dframe.columns:
-            iterables=[]
-            if isinstance(dframe[col].iloc[0],int) or isinstance(dframe[col].iloc[0],float):
-                iterables.append(col)
-            for item in iterables:
-                bootstrap= np.mean(bootstrap_bill(dframe[item]))
-                st.write(f"for {item} the mean is {bootstrap} with a standard deviation of {stats.stdev(bootstrap_bill(dframe[item]))}.")
 
+#Given an array, this function will return a random choice provided it
+#is within one standard deviation of the mean of the dataset.
+#particularly important when modeling consistent motion for a satellite
+#later on; otherwise, we'd have a hgiher propensity to superimpose maneuvers
+#over a satellite instead of just imposing natural motion to see when the vehicle
+#will meet conditions consistent with when it regularly maneuvers.
 def standardized_choice(array): 
     contextualmean= np.mean(array)
     contextualstd= stats.stdev(array)
+    #arbitrarily low number so that it will always be replaced, but can be 
+    #compared with < and > to initiate the while loop.
     outcome= -100000000000
     while outcome > contextualmean + contextualstd or outcome < contextualmean - contextualstd:
         outcome = bootstrap_bill(array,1)[0]
     return outcome
 
+
+#This defines the bounds of a standard deviation given an array.
+#also givcen the option to choose high/low bounds and how many deviations
+#from the mean you want to capture.
 def stdev(array,dev=1):
     bootstrap= bootstrap_bill(array)
     mean=np.mean(bootstrap)
     stdev= stats.stdev(bootstrap)
     outcome= mean + stdev*dev
     return outcome
-        
 
+
+
+
+#This is honestly much ado for nothing...
+#The abbreviation on the left is how NORAD satellite catalog information 
+#comes naturally. In putting that into a set and then making a human-readable
+#equivalent as the value for each, I can call the value just given the column
+#so the name of the satellite owner appears in one line of block text
+#when the application is first run.
 sat_owner_set= {"AB":	"the Arab Satellite Communications Organization"
                 ,"ABS":	"Asia Broadcast Satellite"
                 ,"AC":	"Asia Satellite Telecommunications Company (ASIASAT)"
@@ -275,51 +254,110 @@ sat_owner_set= {"AB":	"the Arab Satellite Communications Organization"
                 ,"VTNM":	"Vietnam"
                 ,"ZWE":	"the Republic of Zimbabwe"}
 
+
+
+
+
+#Setup done! Let's get started!
+
+
+
+
+
+
+#Title of the app
 st.title("Satellite Maneuver Predictor")
 
-#Establish 'now', then check no against the timestamp in the last data file to see if two hours have elapsed, constituting a long enough window since the last run (2 hrs) to re-pull the data.
 
-
+#Uses on-file csv with timestamp imputed by the last unique satellite search.
+#reads time into datetime object to compare with now to determine whether or not we
+#can justifiably request another of the same file from the database.
+#Establish 'now', then check now against the timestamp in the last data file to see if 
+#at least 5 hours have elapsed, constituting a long enough window since the last run 
+#(5 hrs) to re-pull the data, per Dr. Kelso to avoid this being seen as a DDOS attack.
+#If the condition to pull a new file has been met, it not only reads the file, but also
+#immediately files it away to reset the 5-hour clock so we play nicely with our NORAD friends.
 given_string_time = pd.read_csv("data/sat_pos_history.csv")['Timestamp'].iloc[0][:19]
 date_format = '%Y-%m-%d %H:%M:%S'
 new_time = datetime.strptime(given_string_time, date_format)
 timestamp_difference = datetime.now() - new_time
-
 if timestamp_difference > timedelta(hours=5):
     satcat = pd.read_csv("https://celestrak.org/pub/satcat.csv")
     satcat.to_csv('data/satcat.csv',header=True,sep=',')
 else: satcat = pd.read_csv("data/satcat.csv")
 
-# move satcat and zip response both into a data folder, and impute current time over them with a code that checlos this time against our time
+
+
+
+
+
+#The following code parses a ton of satellites out of the database so the user can only 
+#select satellites with enough pertinent information to actually let the tool function properly...
+#It's worth noting that the satellite catalog is a complete catalogue of everything that has EVER
+#been in space to include every individual piece of debris, deorbited sats, sputnik, etc. so it must
+#be parsed thoroughly so that the only available satellites to select are those that could reasonably
+#benefit from a prediction... No need to predict Sputniks Orbit or maneuvers afterall!
+
+#Sats must be considered functional and on orbit
 satcat = satcat[satcat['OPS_STATUS_CODE'] == "+"]
+
+#Sats must not be labelled as debris or rocket bodies (neither of which maneuver!)
 satcat = satcat[satcat['OBJECT_TYPE'] != "DEB"]
 satcat = satcat[satcat['OBJECT_TYPE'] != "R/B"]
+
+#Sats must have complete data, without random gaps across different observations
 satcat = satcat[satcat['DATA_STATUS_CODE'] != "NEA"]
 satcat = satcat[satcat['DATA_STATUS_CODE'] != "NCE"]
 satcat = satcat[satcat['DATA_STATUS_CODE'] != "NIE"]
+
+#Sats must be orbitting the Earth
 satcat = satcat[satcat['ORBIT_CENTER'] == "EA"]
 
 
+
+
+
+
+
+#Here we create the form the user completes to select a satellite of the available options.
+#I wanted to ensure no user imput errors were possible so, as such both available search criteria,
+#Name and satcat number, are in drop-down menus. 
 sat_selection_form = st.form("SatCat selection",)
 selection_criteria = sat_selection_form.radio('Select Search Criteria: ', options=['Search by Satellite Name','Search by NORAD SATCAT Number'])
 name_search = sat_selection_form.selectbox('Satellite Name: ',satcat['OBJECT_NAME'])
 number_search = sat_selection_form.selectbox('NORAD SATCAT Number: ',satcat['NORAD_CAT_ID'])
 
+#I've come to find that once interacted with, 'submission' is set to 'True',
+#hence, the rest of the file will be in an if statement... 
 submission = sat_selection_form.form_submit_button("Find Maneuvers")
 
 if submission:
+
+    #This keeps the satellite name and number variables referred to later consistent regardless
+    #of the search criteria (Name or number) used by the user.
     if selection_criteria == 'Search by Satellite Name':
         sat_num = satcat['NORAD_CAT_ID'].loc[satcat['OBJECT_NAME'] == name_search].iloc[0]
         sat_name = satcat['OBJECT_NAME'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]
-    else: sat_num = number_search
+    else: 
+        sat_num = number_search
+        sat_name = satcat['OBJECT_NAME'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]
 
+
+    #Blurb introducing the user to some identifying information about their satellite while the rest of
+    #the app builds out.
     st.write(f"Showing results for {sat_name}, NORAD Satcat Number {sat_num}, owned by {sat_owner_set[satcat['OWNER'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]]}, and launched {satcat['LAUNCH_DATE'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}. For a complete rundown on how to analyze this orbit, refer to the tabs sequentially from left to right. Otherwise, select the tab to best suit your needs, with Pocket Orbital Analyst being the most surface-level, simple report on {sat_name}.")
+    
+    #wanted to organize with with tabs rather than pages to cut down on intermittent loading time, instead
+    #just having it load all at once at the outset. Additionally, this spares me the headache of trying to 
+    #share variables and dataframes across multiple files.
     tab1,tab2,tab3,tab4,tab5,tab6 = st.tabs(["Basic Orbital Mechanics","Maneuver Detection","Pocket Orbital Analyst",f"{satcat['OBJECT_NAME'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}'s Position",f"{satcat['OBJECT_NAME'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}'s Maneuver Predictions","Hypothesis Testing"])
     
+    #tab1, column1 and tab1,column2 respectively.
     t1c1, t1c2 = tab1.columns(2)
 
 
-   
+    #The following blocks of code populate the first tab, teaching the user about the Classical Orbital Elements
+    #using text as well as diagrams expertly crafted in microsoft paint, pulled from the included images folder.
     t1c1.image("images/sma_img.jpg")
     t1c2.subheader("Semimajor Axis (SMA)")
     t1c2.write("Semimajor Axis (measured in kms) is effectively the 'radius' of an ellipse or oval, measured along the most oblong side (hence the 'Major' as opposed to 'Minor'!). As you can see on the left, the smaller of the two semimajor axes is overall closer to the Earth than the one shown on the right. This not only allows it to travel faster in its orbit as it's closer to the mass its orbiting (known as the 'Primary'), but it also has much less distance to cover, like a runner on the inside lanes of a track as opposed to the runner on the outside! This results in a directly linear relationship between SMA and Period, that is, the amount of time it takes for a satellite to complete one full orbit and return to its original position.")
@@ -347,9 +385,9 @@ if submission:
     t1c1.write("True Anomaly (measured in degrees from 0 to 360,) is the satellites position in its orbit at the time of measuring, measured from Perigee to the satellites current position. Bear in mind, while all the above Classical Orbital Elements describe the shape of a satellites orbit and are subject to change due to a number of perturbations from other gravitational forces as well as active maneuvers, True Anomaly, as a descriptor of where a satellite is in its orbit, goes from 0 to 360 over the course of a single Period (which changes based on SMA!), so can change wildly depending on the time you check its position, usally via a Two-Line-Element-Set (TLE). This is also an Orbital Element whose rate of change can vary based on the orbits Eccentricity as, if you recall, higher Eccentricities mean the satellite will speed up and slow down more while orbiting as opposed to more circular orbits.")
                
     
+    #Here's some expository on how to detect maneuvers, coupled with a helpful visual aid from our Images folder.
     tab2.header("Maneuver Detection in a Nutshell")
     tab2.write("'Did someone drive my car today?' may seem like an innocuous way to describe maneuver detection, but bear with the analogy... There are a couple ways to determine if someone drove my car today. If I drove it, I have first-hand experience, so there's one way! Another is if my wife's nice enough to to tell me she drove my car to the store today. Assuming, however, I don't have access to the odometer, the only other way is to open the door to my garage and check if my car is there or not. Our means of maneuver detection, in this case, is exactly that; Where every data point is NORAD opening the 'garage door' to see if the satellites are all where we expect them to be since we last checked... If they're not, we can assume someone took'em for a joyride! Detecting a difference is only one piece of the puzzle though; The other is determining the nature of the change!")
-
     tab2.divider()
     tab2.subheader("Intrack Maneuvers")
     tab2.image("images/int_det_img.jpg")
@@ -357,19 +395,31 @@ if submission:
 
 
 
+
+    #Here we define when nominal operations for a satellite would likely begin, bearing in mind that 
+    #it usually takes 6 months from launch for a satellite to establish a regular pattern of life
+    #after doing all of its checkout operations, just making sure everything works at its outset.
+    #This will be of use to us later on.
     launch_date = datetime.strptime(satcat['LAUNCH_DATE'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0],'%Y-%m-%d')
     checkout_duration = timedelta(weeks=24)
     nominal_ops_date=launch_date+checkout_duration
 
-    if timestamp_difference > timedelta(hours=3) or pd.read_csv("data/sat_pos_history.csv")['SATCAT Number'].iloc[0] != sat_num:
+
+
+    #We're about to do another request so we use the same format as above, checkikng the timestamp of 
+    #file we currently have on-hand before pulling to make sure we don't upset Dr. Kelso! Alternatively,
+    #of course, if we're looking for a different satellite, the request will be different, so it won't look 
+    #malicious from NORAD's perspective. After getting that data, we use an above created function in
+    #conjunction with StringIO to put the data we want in a format that can be read, then turn it into
+    #our dataframe.
+    if timestamp_difference > timedelta(hours=5) or pd.read_csv("data/sat_pos_history.csv")['SATCAT Number'].iloc[0] != sat_num:
         zip_response = get(f"https://celestrak.org/NORAD/elements/graph-orbit-data.php?CATNR={sat_num}")
-        #zip_response = get(f"https://celestrak.org/NORAD/elements/graph-orbit-data.php?CATNR=49260")
         data4csv = fetch_csv_data(zip_response.text)
         in_data = StringIO(data4csv)
         sat_mnvr_df = pd.read_csv(in_data,header=0,sep=',')
 
 
-    
+        #Housekeeping to turn the date in the dataframe into something more readable
         for i in range(len(sat_mnvr_df['Date'])):
             sat_mnvr_df['Date'].iloc[i] = sat_mnvr_df['Date'].iloc[i].replace("T", " ")
         for i in range(len(sat_mnvr_df['Date'])):
@@ -378,59 +428,61 @@ if submission:
             sat_mnvr_df['Date'].iloc[i] = time_parser(sat_mnvr_df['Date'].iloc[i])
         sat_mnvr_df = sat_mnvr_df.rename(columns={"Date":"Date/Time (UTC)"})
     
+        #What's given here innately is actually altitude, not Semimajor Axis. Thankfully,
+        #the quick addition of the Earths radius, 6378kms, resolves that issue!
         for i in range(len(sat_mnvr_df['SMA'])):
             sat_mnvr_df['SMA'].iloc[i] += 6378
 
+        #quick orbital mechanics to deduce period, that is the seconds it takes for a 
+        #satellite to complete one orbit, from SMA. 
         sat_mnvr_df['Period'] = None
         for i in range(len(sat_mnvr_df['SMA'])):
             sat_mnvr_df['Period'].iloc[i] = 2*math.pi*math.sqrt((sat_mnvr_df['SMA'].iloc[i]**3)/398600.44189)
 
         sat_mnvr_df=sat_mnvr_df.dropna()
-
-        #for col in sat_mnvr_df.columns:
-        #    sat_mnvr_df[f'{col} Delta']= None
-        #    for i in range(1,len(sat_mnvr_df[f'{col} Delta'])):
-        #        sat_mnvr_df[f'{col} Delta'].iloc[i] = abs(sat_mnvr_df[col].iloc[i] - sat_mnvr_df[col].iloc[i-1])
-#
-        #sat_mnvr_df = sat_mnvr_df.dropna()
-        #for i in range(len(sat_mnvr_df['Date/Time (UTC) Delta'])):
-        #    if sat_mnvr_df['Date/Time (UTC) Delta'].iloc[i] == '0:00:00':
-        #        sat_mnvr_df['Date/Time (UTC) Delta'].iloc[i] = None
-        #sat_mnvr_df = sat_mnvr_df.dropna()
 #
 
-
+        #Impute the timestamp used to justify when new requests would be appropriate again,
+        #then push this file up to data to be used later and continue the cycle as necessary!
         sat_mnvr_df['Timestamp'] = datetime.now()
         sat_mnvr_df['SATCAT Number'] = sat_num
         sat_mnvr_df.to_csv('data/sat_pos_history.csv',header=True,sep=',')
         sat_mnvr_df = sat_mnvr_df.drop(columns=['Timestamp','SATCAT Number'])
 
 
-
+    #Pulls the on-hand file as our dataframe, cleaning out unnecessary columns at the same time. 
     else: sat_mnvr_df = pd.read_csv("data/sat_pos_history.csv").drop(columns=["Unnamed: 0", "Timestamp","SATCAT Number"])
 
+
+
+    #ensures our Date/Time is a datetime object using a function we made earlier
     if isinstance(sat_mnvr_df['Date/Time (UTC)'].iloc[0], str):
         for i in range(len(sat_mnvr_df['Date/Time (UTC)'])):
             sat_mnvr_df['Date/Time (UTC)'].iloc[i] = time_parser(sat_mnvr_df['Date/Time (UTC)'].iloc[i])
     
+
+    #Given the orbital parameters from our dataset, this function creates
+    #an additional column for each column already present, now calculating
+    #how much the given parameter has changed since the last observation.
+    #i.e. if date/time at index1 was 2024-08-08 12:00:00 and date/time at 
+    #index2 was 2024-08-08 13:00:00, date/time delta at index 2 would be 
+    #3600 seconds since that represents the time between the two observations
     for col in sat_mnvr_df.columns:
             sat_mnvr_df[f'{col} Delta']= None
             for i in range(1,len(sat_mnvr_df[f'{col} Delta'])):
                 sat_mnvr_df[f'{col} Delta'].iloc[i] = abs(sat_mnvr_df[col].iloc[i] - sat_mnvr_df[col].iloc[i-1])
 
     sat_mnvr_df = sat_mnvr_df.dropna()
+
+    #Gets rid of duplicate observations so our data chronologically increases.
     for i in range(len(sat_mnvr_df['Date/Time (UTC) Delta'])):
         if sat_mnvr_df['Date/Time (UTC) Delta'].iloc[i] == '0:00:00':
             sat_mnvr_df['Date/Time (UTC) Delta'].iloc[i] = None
     sat_mnvr_df = sat_mnvr_df.dropna()
 
-    sat_mnvr_df = sat_mnvr_df.dropna()
-    for i in range(len(sat_mnvr_df['Date/Time (UTC) Delta'])):
-        if sat_mnvr_df['Date/Time (UTC) Delta'].iloc[i] == '0:00:00':
-            sat_mnvr_df['Date/Time (UTC) Delta'].iloc[i] = None
-    sat_mnvr_df = sat_mnvr_df.dropna()
 
-
+    #Turns the time between observations into seconds (also not a datetime object anymore!) and also 
+    #repeats above attemps to catch any duplicate observations and parse them out of the dataset. 
     for i in range(len(sat_mnvr_df['Date/Time (UTC)'])):
         sat_mnvr_df['Date/Time (UTC) Delta'].iloc[i] = abs(sat_mnvr_df['Date/Time (UTC)'].iloc[i] - sat_mnvr_df['Date/Time (UTC)'].iloc[i-1]).total_seconds()
         if sat_mnvr_df['Date/Time (UTC) Delta'].iloc[i] == timedelta(seconds=0)\
@@ -439,7 +491,14 @@ if submission:
     sat_mnvr_df = sat_mnvr_df.dropna()
 
 
-
+    #Here we instantiate a column indicating the detection of an E/W maneuver.
+    #This is determined using high changes in relative orbital elements, SMA and Eccentricity,
+    #with that data ultimately kept in check by ensuring it's not just due to an abnormal time
+    #between observations. You may notice that whereas SMA and Period just have to be above
+    #one standard deviation to be considered indicative of a maneuver, Eccentricity has only 0.5.
+    #Whereas radial maneuvers don't really change a satellites position, they do effect eccentricity, 
+    #so it's not necessarily uncommon to couple some degree of radial maneuver with E/W maneuvers to
+    #mitigate eccentricity changes.
     sat_mnvr_df['E/W Maneuver'] = False
     for i in range(len(sat_mnvr_df['SMA'])):
         if sat_mnvr_df['SMA Delta'].iloc[i] >= stats.stdev(sat_mnvr_df['SMA Delta'])*1\
@@ -448,6 +507,15 @@ if submission:
         and sat_mnvr_df['Date/Time (UTC) Delta'].iloc[i] <= stats.stdev(sat_mnvr_df['Date/Time (UTC) Delta'])*2:
             sat_mnvr_df['E/W Maneuver'].iloc[i-1] = True
 
+
+    #Here we instantiate a column indicating the detection of an N/S maneuver.
+    #This is determined using high changes in relative orbital elements, RAAN and Inclination,
+    #with that data ultimately kept in check by ensuring it's not just due to an abnormal time
+    #between observations. You may notice that we also ensure any changes to RAAN above 170 are not counted.
+    #this is because RAAN can sometimes flip 180 degrees as Inclination shifts, but additionally
+    #RAAN usually does a full 360 degree rotation over the course of a year, so we don't want
+    #to attribute it going from 360 to 1 as some massive maneuver, as these are only 1 degree
+    #from each other.
     sat_mnvr_df['N/S Maneuver'] = False
     for i in range(len(sat_mnvr_df['RAAN'])):
         if sat_mnvr_df['RAAN Delta'].iloc[i] >= stats.stdev(sat_mnvr_df['RAAN Delta'])*1\
@@ -456,12 +524,18 @@ if submission:
         and sat_mnvr_df['Date/Time (UTC) Delta'].iloc[i] <= stats.stdev(sat_mnvr_df['Date/Time (UTC) Delta'])*2:
             sat_mnvr_df['N/S Maneuver'].iloc[i-1] = True
 
+    
+    #conglomerates the presence of either maneuver into a single column.
     sat_mnvr_df['Maneuver Detected'] = False
     for i in range(len(sat_mnvr_df['Maneuver Detected'])):
         if sat_mnvr_df['N/S Maneuver'].iloc[i] == True\
         or sat_mnvr_df['E/W Maneuver'].iloc[i] == True:
             sat_mnvr_df['Maneuver Detected'].iloc[i] = True
 
+    #creates yet another column to show maneuvers, this time singularly giving options
+    #e/w, n/s, both, or none. This will be particularly valuable later when plotting as it will
+    #let us call on 'uniques' in this column to change corresponding markers etc. for the given
+    #observation so they appear different colors and shapes depending on the manuever profile.
     sat_mnvr_df['Maneuver Profile'] = None
     for i in range(len(sat_mnvr_df['Maneuver Detected'])):
         if sat_mnvr_df['N/S Maneuver'].iloc[i] == False and sat_mnvr_df['E/W Maneuver'].iloc[i] == False:
@@ -473,6 +547,7 @@ if submission:
         if sat_mnvr_df['N/S Maneuver'].iloc[i] == True and sat_mnvr_df['E/W Maneuver'].iloc[i] == True:
             sat_mnvr_df['Maneuver Profile'].iloc[i] = 'Compound Maneuver'
 
+    #Notates whether or not a maneuver occurred during the vehicles checkout period.
     sat_mnvr_df['Checkout Period'] = False
     for i in range(len(sat_mnvr_df['Maneuver Detected'])):
         if sat_mnvr_df['Maneuver Detected'].iloc[i] == True\
@@ -481,6 +556,12 @@ if submission:
 
     sat_mnvr_df=sat_mnvr_df.dropna()
     
+    #Here I make a new dataframe and redo the Delta columns for later use,
+    #namely so that unlike the sat_df we've been looking at, this one doesn't
+    #just show the magnitude difference in any parameter as a positive value,
+    #but shows it with sign as well. This becomes critical when modelling out 
+    #predictive motion as otherwise we'd see every orbital element increase at
+    #the right interval, but ONLY in the positive direction!
     nonabs_df = sat_mnvr_df.copy()
     for col in nonabs_df.columns[:7]:
             nonabs_df[f'{col} Delta']= 0
@@ -488,7 +569,15 @@ if submission:
                 nonabs_df[f'{col} Delta'].iloc[i] = nonabs_df[col].iloc[i] - nonabs_df[col].iloc[i-1]
     nonabs_df=nonabs_df.dropna()
 
-     
+    
+
+
+
+
+
+    #Here we start to show off all the data we just sifted through, placing it 
+    #squarely in tab4 which shows charts and visualizations of the user's
+    #satellite's orbit thus far.
     tab4.header(f"{sat_name}'s NORAD Data")
     tab4.divider()
     tab4.write("The following consists of all observations available in the NORAD database.")
@@ -496,11 +585,23 @@ if submission:
 
 
 
+
+
+
+
+    #kneejerk to tab three because I have the brain of a squirrel!
+
+
+
     tab3.header("Satellite B.L.U.F. Analysis:")
     tab3.divider()
     tab3.subheader("Observations")
+
+    #blurb highlighting the information that most people ask for upfront about a satellites orbit pattern.
     tab3.write(f"For {satcat['OBJECT_NAME'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}, there have been :orange[a total of {len(sat_mnvr_df['Date/Time (UTC)'])} observations]. The earliest observation in the current available database occured {sat_mnvr_df['Date/Time (UTC)'].iloc[0]} with the most recent occurring at {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]}. Of these observations, :green[{sum(sat_mnvr_df['Maneuver Detected'])} indicate potential maneuvers given changes to Classical Orbital Elements]. Of the observed potential maneuvers in the dataset, :red[{sum(sat_mnvr_df['Checkout Period'])} occurred during the first 6 months of the satellites time on orbit] which is generally when a number of adjustments are made to initiate intended trajectory which could otherwise skew data trying to capture nominal on-orbit operations. Observations for this satellite by NORAD tend to be collected at an :blue[average interval of {round(np.mean(sat_mnvr_df['Date/Time (UTC) Delta'][1:])/3600, 2)} hours].")
-    #add a section to account for frontloading maneuvers during orbit insertion.
+    
+    
+    #Here's a ton of expository on each orbital regime, made a set to be called on later...
     regime_descr = {"Low Earth Orbit (LEO)":"These satellites move at a high velocity relative to the earth, circling the planet about 14-16 times a day. They require the lowest power budget to contact, but their field of view is small relative to satellites in higher orbital regimes, requiring the greatest number of satellites to achieve a globally effective constellation."
                     ,"Medium Earth Orbit (MEO)":"These satellites are situated safely between the Earths two Van Allen Radiation belts whose radiation is otherwise a detriment to most satellites lifespans. These satellites circle the planet every 12 hours which makes their frequency less potent than satellites in Low Earth Orbit, however, these satellites are far enough from the planet to be afforded a much larger Field of View. As a result, most Navigation satellites are primarily in this orbital regime to include GPS and GLONASS."
                     ,"GeoSynchronous Earth Orbit (GEO)":"At lower inclination, these satellites are stationary relative to the ground below and will, in fact, appear as the only 'stars' in the sky that do not move over the course of a full night. Their positional consistency makes them ideal for satellite communication as antennae on the ground rarely need to be reoriented to follow them. Additionally, only three satellites are needed for a constellation that has complete coverage of the Earth barring some locations at very high or low latitudes."
@@ -520,16 +621,35 @@ if submission:
         regime = "CisLunar Space or Beyond"
     if np.mean(sat_mnvr_df['Eccentricity']) >= 0.05:
         regime = "Highly Elliptical Orbit (HEO)"
-    if np.mean(sat_mnvr_df['SMA']) < 10000\
+    if np.mean(sat_mnvr_df['SMA']) < 12000\
     and np.mean(sat_mnvr_df['Inclination']) < 105\
     and np.mean(sat_mnvr_df['Inclination']) > 94:
         regime = "Sun-Synchronous Orbit (SSO)"
     tab3.divider()
     tab3.subheader("Regime")
+
+    #Here's where I call on that above regime expository, corresponding with the Semimajor Axes listed above.
     tab3.write(f"With a SemiMajor Axis of approximately {round(np.mean(sat_mnvr_df['SMA']),2)} kilometers, :blue[{satcat['OBJECT_NAME'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]} is in a {regime}]. {regime_descr[regime]}")
 
+
+
+
+
+
+
+    #Whiplash again! Time for Tab 2!
+
+
+    #Expository on analyzing orbits, now referring to a graph thats ABOUT to populate based on the dataframe we made above, sat_mnvr_df.
     tab2.write(f"Time to flex your newfound skills as an Orbital Analyst! Check out the SMA and Eccentricity of {sat_name}, the satellite you just ran. To orient you to the graphs, white dots indicate position while the red triangles and blue stars indicate detection of Intrack or Compound (both Intrack AND Crosstrack) maneuvers respectively... You probably notice some white 'tails' trailing behind the red triangles and blue stars (if there ARE any!). This indicates that an Intrack maneuver happened at that time and then, as of the next observation, the SMA/Eccentricity was different! Now, looking just at the SMA graph and knowing what you now know about how Positive Intrack Maneuvers increase SMA while Negative Intrack Maneuvers decrease SMA, just by looking at where the while tail shifts after a Maneuver, you can tell if the Maneuver was Positive or Negative! on the SMA graph, if the next 'tail' is above the detected maneuver, it was a Positive Intrack Maneuver, whereas the opposite is true of a Negative Intrack Maneuver! You probably also noticed some yellow circles on the graph too; These indicate detection of a Crosstrack Maneuver and are what we're going to focus on next...")
 
+
+    #Here some of the pieces we've been talking about start to come together...
+    #Columns 4:6 correspond with orbital elements relevant to Intrack maneuvers.
+    #We also instantiate some sets whose keys correspond with values from our 'Maneuver Profile'
+    #column, allowing for different marker shape and color based on the type of maneuver.
+    #you'll also notice I change the label to include corresponding units based on the column...
+    #...can't be measuring time in kilometers or degress now, can we?
     for col in sat_mnvr_df.columns[4:6]:
         colors = {'None':'w', 'Compound Maneuver':'c', 'Intrack Maneuver':'r', 'Crosstrack Maneuver':'y'}
         size = {'None':5, 'Compound Maneuver':50, 'Intrack Maneuver':50, 'Crosstrack Maneuver':50}
@@ -565,6 +685,9 @@ if submission:
         fig.set_facecolor('white')
         tab2.pyplot(fig)
     
+
+
+    #Here's a bunch more expository on orbit maneuver detection; now in terms of crosstrack motion.
     tab2.subheader("Crosstrack Maneuvers")
     tab2.image("images/ct_det_img.jpg")
     tab2.write("If you're not confused yet, this oughta do the trick... Crosstrack Maneuvers, that is maneuvers perpendicular to the direction of motion (sometimes called North/South Maneuver... which can be helpful, but also really misleading for satellites with high inclination since their direction of motion very well may be North or South!) and their effect on an orbit have as much to do with the time and position in the orbit that they occur as the magnitude and direction. Angular momentum is the heavy-hitter here in terms of limitting what is and is not possible for a satellite with the satellites orbit effectively being like a gyro, such that it's highly resistant to change. As such, the Ascending and Descending Nodes can be thought os like an 'axel' on which our Inclination can rotate. With this in mind, a Positive Crosstrack Maneuver at the Ascending Node results in an increased Inclination as in our example above, whereas a Negative Crosstrack Burn at this same position would result in a lower Inclination.")
@@ -581,6 +704,13 @@ if submission:
     tab2.write("and (-Position) x (+Mnvr Direction) = (-RAAN Change)!")               
     tab2.write("Luckily for budding Orbital Analysts like yourself, maneuvers intended to change soleley RAAN are exceedingly rare... What's not as rare is RAAN-flipping, which is when RAAN all-of-a-sudden changes 180 degrees. This is almost never because of some profound maneuver, but is instead because Inclination changed, flipping which Node is the Ascending Node and which is the DEscending Node, in turn shifting RAAN by 180 degrees as well due to how RAAN is measured.")
 
+
+    #Here's effectively a repeat of the above chart, this time for Inclination and RAAN.
+    #Columns 1:3 correspond with orbital elements relevant to Crosstrack maneuvers.
+    #We also instantiate some sets whose keys correspond with values from our 'Maneuver Profile'
+    #column, allowing for different marker shape and color based on the type of maneuver.
+    #you'll also notice I change the label to include corresponding units based on the column...
+    #...can't be measuring time in kilometers or degress now, can we?
     for col in sat_mnvr_df.columns[1:3]:
         colors = {'None':'w', 'Compound Maneuver':'c', 'Intrack Maneuver':'r', 'Crosstrack Maneuver':'y'}
         size = {'None':5, 'Compound Maneuver':50, 'Intrack Maneuver':50, 'Crosstrack Maneuver':50}
@@ -616,8 +746,20 @@ if submission:
         fig.set_facecolor('white')
         tab2.pyplot(fig)
     
+    #final expository of tab 2
     tab2.write(f"In the above graphs analyzing {sat_name} you may see RAAN skip by upwards of 180 degrees due to the oscillation of Inclination mentioned before, but most often we see ran steadily increase or decrease until reaching 360 or 0 respectively and then starting over again at the other end of the graph. (In addition to Apsidal Rotation due to J2 Pertubations, which we'll touch on later,) This is simply evidence of the Ascending Node slowly shifting every day relative to the Vernal Equinox over the course of a year, not unlike the needle of a compass changing relative to the direction you're facing if you held a compass and walked in a circle around your room; The needle doing a full 360 degree rotation before ending in the same position it started in just as you have. In the case of analyzing this orbits inclination changes, the yellow circles and blue stars should preface skips in the white tails, indicating a change in Inclination. Vehicles in GeoSynchronous Orbits tend to do Crosstrack Maneuvers less, and vehicles in SunSynchronous Orbits do these maneuvers the most. The next tab, Pocket Orbital Analyst, will give you the overview of the regime this orbit is in!")
 
+
+
+
+
+    #kneejerk to tab4!
+
+    #This is a repeat of the above codes used to make their corresponding charts 
+    #(yes I agree, this 100% should have been a function lol), this time covering
+    #all Orbital Elements, rather than dividing by N/S relevant and E/W relevant.
+    tab4.divider()
+    tab4.subheader(f"{sat_name}'s Orbital Elements over Time")
     for col in sat_mnvr_df.columns[1:7]:
         colors = {'None':'w', 'Compound Maneuver':'c', 'Intrack Maneuver':'r', 'Crosstrack Maneuver':'y'}
         size = {'None':5, 'Compound Maneuver':50, 'Intrack Maneuver':50, 'Crosstrack Maneuver':50}
@@ -655,8 +797,15 @@ if submission:
         fig.set_facecolor('white')
         tab4.pyplot(fig)
 
+    #I split up the Orbital Elements themselves and the Change to each between observations, 
+    #really to give a little expository here explaining how to digest the information effectively.
+    tab4.divider()
+    tab4.subheader(f"{sat_name}'s change in each Orbital Element over Time")
+    tab4.write("This may seem like an innocuous destinction, but seeing how much each parameter changes between observations is arguably as important as seeing whether or not there were changes at all. The trick here is to look for parallel horizontal lines... This indicates consistency in maneuver magnitude, so not only can we see when a vehicle is maneuvering and in what direction, but in looking at the deltas, we can sometimes see a pattern that tells us the last missing piece of the puzzle!")
 
-
+    #This is a repeat of the above codes used to make their corresponding charts 
+    #(yes I agree, this 100% should have been a function lol), this time covering
+    #all changes to Orbital Elements between observations rather than dividing by N/S relevant and E/W relevant.
     for col in sat_mnvr_df.columns[7:14]:
         colors = {'None':'w', 'Compound Maneuver':'c', 'Intrack Maneuver':'r', 'Crosstrack Maneuver':'y'}
         size = {'None':5, 'Compound Maneuver':50, 'Intrack Maneuver':50, 'Crosstrack Maneuver':50}
@@ -697,28 +846,32 @@ if submission:
         tab4.pyplot(fig)
 
 
-    j2_nodal_proc_rads_pr_sec=(-3/2)*(0.000108262668)*(
-    6378/np.mean(sat_mnvr_df['SMA'])*(
-        1-np.mean(sat_mnvr_df['Eccentricity'])**2)**2)*math.sqrt(
-            (398600.44189/np.mean(sat_mnvr_df['SMA'])**3))*(
-                math.cos(np.mean(sat_mnvr_df['Inclination'])))
-    
-    if timestamp_difference > timedelta(hours=3) or pd.read_csv("data/sat_pos_history.csv")['SATCAT Number'].iloc[0] != sat_num:
-        tle = pd.read_csv(f"https://celestrak.org/NORAD/elements/gp.php?CATNR={sat_num}")
-        tle.to_csv('data/tle.csv',header=True,sep=',')
-    else: tle = pd.read_csv('data/tle.csv')
 
-    #mean_motion = math.sqrt(398600.4418/np.mean(sat_mnvr_df['SMA']))
 
-    #ball_coef = eval(tle.iloc[0][1][34:43])
+    #Back to Tab3 'cause why not?
 
     tab3.divider()
     tab3.subheader("Maneuver History")
-
+    #Here we start looking at maneuver histpry starting with N/S maneuvers,
+    #first making a dataframe consisting only of the N/S maneuvers from the original sat_mnvr_df.
+    #Then we give a brief expository on the vehicles N/S maneuvers using the dataframe
+    #we just created.
     nsmnvrs = sat_mnvr_df[sat_mnvr_df['N/S Maneuver'] == True].copy()
     tab3.write(f"The following are all N/S maneuvers. In quick summation, this vehicle has done a total of :orange[{len(nsmnvrs['Date/Time (UTC)'])} N/S maneuvers], with it's earliest in the database being {nsmnvrs['Date/Time (UTC)'].iloc[0]} and the latest being {nsmnvrs['Date/Time (UTC)'].iloc[-1]}.")
 
-
+    #Here I fix the index so there're no gaps, and then do the unthinkable;
+    #actually USING a function I wrote. *takes a bow*
+    #I then create a time between maneuvers column.
+    #now, I know what you're thinking: "Isnt that the same as your Date/Time Delta' column"?
+    #And you'd be right. This, however, was my first time using the .total_seconds method, after
+    #which I went back and applied it to the Date/Time Delta creation way earlier since datetime
+    #objects are way more finnicky than the floats they turn into when you use .total_seconds;
+    #by then, however, I'd already built dependencies on Time Between Maneuvers and didn't want
+    #to go back and alter something that wasn't broken this close to presentation time.
+    #I drop the first row btw, because it'll never have a Time between Maneuvers as there
+    #was no maneuver prior to the first one, and the single None value would complicate my data.
+    #finally, I ditch the N/S maneuver column as it's redundant now in this context where our data
+    #exclusively N/S maneuvers.
     nsmnvrs.index = range(len(nsmnvrs['Date/Time (UTC)']))
     show_deltas(nsmnvrs)
     nsmnvrs['Time Between Maneuvers'] = None
@@ -726,17 +879,16 @@ if submission:
         nsmnvrs['Time Between Maneuvers'].iloc[i] = abs(nsmnvrs['Date/Time (UTC)'].iloc[i] - nsmnvrs['Date/Time (UTC)'].iloc[i-1]).total_seconds()
     nsmnvrs=nsmnvrs.drop(0,axis=0)
     nsmnvrs=nsmnvrs.drop(columns='N/S Maneuver')
-    
-   # mean_report(nsmnvrs)
+    tab3.write(nsmnvrs)
 
+
+
+
+    #Here I have a brief expository describing when a vehicle should do its next manvuever purely looking
+    #at time relative to the last maneuver(nsmnvrs['Date/Time (UTC)'].iloc[-1]) and the mean of how 
+    #frequently the vehicle maneuvers (ns_boot_deltaobj).
     nstime_bootstrap = np.mean(bootstrap_bill(nsmnvrs['Time Between Maneuvers']))
     ns_boot_deltaobj = timedelta(seconds=nstime_bootstrap)
-
-    nsmnvrs['Time Residuals'] = None
-    for i in range(len(nsmnvrs['Time Between Maneuvers'])):
-        nsmnvrs['Time Residuals'].iloc[i] = nsmnvrs['Time Between Maneuvers'].iloc[i]-nstime_bootstrap
-
-    tab3.write(nsmnvrs)
     if nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj > datetime.now():
         tab3.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :green[should occur] around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}. For higher fidelity, continue to the Maneuver Prediction section.")
     elif sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']) > 0.1:
@@ -744,10 +896,19 @@ if submission:
     else: tab3.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :red[should have occured] {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
 
 
+    #Here we look at maneuver history in terms of E/W maneuvers,
+    #first making a dataframe consisting only of the E/W maneuvers from the original sat_mnvr_df.
+    #Then we give a brief expository on the vehicles E/W maneuvers using the dataframe
+    #we just created.
     ewmnvrs = sat_mnvr_df[sat_mnvr_df['E/W Maneuver'] == True].copy()
     tab3.divider()             
     tab3.write(f"The following are all E/W maneuvers. In quick summation, this vehicle has done a total of :red[{len(ewmnvrs['Date/Time (UTC)'])} E/W maneuvers], with it's earliest in the database being {ewmnvrs['Date/Time (UTC)'].iloc[0]} and the latest being {ewmnvrs['Date/Time (UTC)'].iloc[-1]}")
 
+    #Here, just as above for the N/S counterpart, I fix the index so there're no gaps, 
+    #create a time between maneuvers column, and  drop the first row btw, because it'll never 
+    #have a Time between Maneuvers as there was no maneuver prior to the first one, and the single 
+    #None value would complicate my data. Finally, I ditch the E/W maneuver column as it's redundant 
+    #now in this context where our data is exclusively E/W maneuvers.
     ewmnvrs.index = range(len(ewmnvrs['Date/Time (UTC)']))
     show_deltas(ewmnvrs)
     ewmnvrs['Time Between Maneuvers'] = None
@@ -755,45 +916,47 @@ if submission:
         ewmnvrs['Time Between Maneuvers'].iloc[i] = abs(ewmnvrs['Date/Time (UTC)'].iloc[i] - ewmnvrs['Date/Time (UTC)'].iloc[i-1]).total_seconds()
     ewmnvrs=ewmnvrs.drop(0,axis=0)
     ewmnvrs=ewmnvrs.drop(columns='E/W Maneuver')
-    
-   # mean_report(ewmnvrs)
+    tab3.write(ewmnvrs)
 
+
+
+    
+    #Here I have a brief expository describing when a vehicle should do its next manvuever purely looking
+    #at time relative to the last maneuver(ewmnvrs['Date/Time (UTC)'].iloc[-1]) and the mean of how 
+    #frequently the vehicle maneuvers (ew_boot_deltaobj).
     ewtime_bootstrap = np.mean(bootstrap_bill(ewmnvrs['Time Between Maneuvers']))
     ew_boot_deltaobj = timedelta(seconds=ewtime_bootstrap)
-
-    ewmnvrs['Time Residuals'] = None
-    for i in range(len(ewmnvrs['Time Between Maneuvers'])):
-        ewmnvrs['Time Residuals'].iloc[i] = ewmnvrs['Time Between Maneuvers'].iloc[i]-ewtime_bootstrap
-
-    
-    tab3.write(ewmnvrs)
     if ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj > datetime.now():
         tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :green[should occur] around {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}. For higher fidelity, continue to thew Maneuver Prediciton section.")
     elif sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']) > 0.1:
         tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have occured] {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}. However, :orange[{round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period], while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
     else: tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have occured] {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
 
+
+    #Here I create I list of all times in the Date/Time Delta column from our
+    #original dataframe. I have honestly no clue why I have to do this,
+    #save to say, when propogating into the future and doing our predictions later,
+    #the timedelta function is willing to play nice with a list, but not the column itself...
     time_delta_sec =[]
     for i in range(len(sat_mnvr_df['Date/Time (UTC) Delta'])):
         time_delta_sec.append(sat_mnvr_df["Date/Time (UTC) Delta"].iloc[i])
 
+    #Here I instantiate a new dataframe, I refer to as my conditional dataframe.
+    #This will consist of 200 artificial observations, starting with the last actual
+    #observation (sat_mnvr_df[col].iloc[-1]) and then propogating 200 times, building
+    #each next 'observation' sequentially using standardized, bootstrapped samples 
+    #of the corresponding Delta columns for each Orbital element. 
     cond_df=pd.DataFrame(columns=sat_mnvr_df.columns[:7], index=range(0,201))
     for col in cond_df.columns[0:7]:
         cond_df[col].iloc[0]=sat_mnvr_df[col].iloc[-1]
 
-    #st.write(type(standardized_choice(sat_mnvr_df['Date/Time (UTC) Delta'])),standardized_choice(sat_mnvr_df['Date/Time (UTC) Delta']))
-
-    for i in range(1,len(nonabs_df['Date/Time (UTC) Delta'])):
-        nonabs_df['Date/Time (UTC) Delta'].iloc[i]= nonabs_df['Date/Time (UTC) Delta'].iloc[i].total_seconds()
-
-    nonabs_df= nonabs_df.iloc[1:]
-    nonabs_df.index= range(len(nonabs_df['Date/Time (UTC) Delta']))
 
 
-    #don't need this anymore st.write(type(nonabs_df['Date/Time (UTC) Delta'].iloc[2]))
 
     
-
+    #This is where I start to enact the above, iterating through each line to populate it.
+    #you may also notice a couple if statements there; those keep each outcome within the bounds 
+    #of its measurement, 360 and 180 degrees respectively for those orbital elements.
     for col in cond_df.columns[1:7]:
         std_choices=[]
         for i in range(201):
@@ -811,24 +974,22 @@ if submission:
                 if cond_df[col].iloc[i] > 180:
                    cond_df[col].iloc[i] -= 180
 
-   ## for i in range(10):
-   #     tab5.write(random.choice(sat_mnvr_df['Date/Time (UTC) Delta']))
-   #     tab5.write(type(random.choice(sat_mnvr_df['Date/Time (UTC) Delta'])))
-#
-   # tab5.write('sat_mnvr time delta type is:')
-   # tab5.write(type(sat_mnvr_df['Date/Time (UTC) Delta'].iloc[0]))
-#
+
 
     
-
+    #Here after having thrown a virgin into a volcano to sate the wrath of the 
+    #datetime-object dieties, I'm able to populate the Date/Time observation predictor,
+    #effectively simulating the same intervals by which all previous observations were taken.
     for i in range(1,len(cond_df['Date/Time (UTC)'])):
         second_offset= standardized_choice(time_delta_sec)
         cond_df['Date/Time (UTC)'].iloc[i] = cond_df['Date/Time (UTC)'].iloc[i-1] + timedelta(seconds = second_offset)
 
    
 
-    #st.write((cond_df["Date/Time (UTC)"].iloc[0])+timedelta(seconds=10000000))
-
+    #Here I create columns which indicate whether or not the conditions that constitute 
+    #when an E/W maneuver occurs in terms of Orbital Elements have been reasonably met.
+    #I'm at peace with being fairly liberal here, as the graphs later will overlay how
+    #many conditions have been met, still granting high fidelity by virtue of the gradient.
     for col in cond_df.columns[3:7]:
         cond_df[f'{col} E/W Maneuver Conditions'] = False
         for i in range(len(cond_df['Date/Time (UTC)'])):
@@ -836,12 +997,18 @@ if submission:
             and cond_df[col].iloc[i] >  stdev(ewmnvrs[col],-2):
                 cond_df[f'{col} E/W Maneuver Conditions'].iloc[i] = True
     
+    #same as above, but datetime objects are always miserably more complicated
     cond_df['Delta Time E/W Maneuver Conditions'] = False
     for i in range(len(cond_df['Date/Time (UTC)'])):
          if cond_df['Date/Time (UTC)'].iloc[i] < ewmnvrs['Date/Time (UTC)'].iloc[-1] + timedelta(seconds=stdev(bootstrap_bill(ewmnvrs['Time Between Maneuvers']),2))\
             and cond_df['Date/Time (UTC)'].iloc[i] < ewmnvrs['Date/Time (UTC)'].iloc[-1] + timedelta(seconds=stdev(bootstrap_bill(ewmnvrs['Time Between Maneuvers']),-2)):
                 cond_df['Delta Time E/W Maneuver Conditions'].iloc[i] = True
 
+
+    #Here I create columns which indicate whether or not the conditions that constitute 
+    #when an N/S maneuver occurs in terms of Orbital Elements have been reasonably met.
+    #I'm at peace with being fairly liberal here, as the graphs later will overlay how
+    #many conditions have been met, still granting high fidelity by virtue of the gradient.
     for col in cond_df.columns[1:3]:
         cond_df[f'{col} N/S Maneuver Conditions'] = False
         for i in range(len(cond_df['Date/Time (UTC)'])):
@@ -849,12 +1016,16 @@ if submission:
             and cond_df[col].iloc[i] >  stdev(nsmnvrs[col],-2):
                 cond_df[f'{col} N/S Maneuver Conditions'].iloc[i] = True
 
+    #same as above, but datetime objects are always miserably more complicated
     cond_df['Delta Time N/S Maneuver Conditions'] = False
     for i in range(len(cond_df['Date/Time (UTC)'])):
          if cond_df['Date/Time (UTC)'].iloc[i] < nsmnvrs['Date/Time (UTC)'].iloc[-1] + timedelta(seconds=stdev(bootstrap_bill(nsmnvrs['Time Between Maneuvers']),2))\
             and cond_df['Date/Time (UTC)'].iloc[i] < nsmnvrs['Date/Time (UTC)'].iloc[-1] + timedelta(seconds=stdev(bootstrap_bill(nsmnvrs['Time Between Maneuvers']),-2)):
                 cond_df['Delta Time N/S Maneuver Conditions'].iloc[i] = True
 
+
+    #Bearing in mind that 'True' = 1, this is where I conglomerate the above Maneuver Conditions met 
+    #columns for N/S and E/W maneuvers respectively.
     cond_df['E/W Maneuver Likelihood']=0
     for i in range(len(cond_df['Date/Time (UTC)'])):
         cond_df['E/W Maneuver Likelihood'].iloc[i]=sum([
@@ -863,7 +1034,6 @@ if submission:
             cond_df['Eccentricity E/W Maneuver Conditions'].iloc[i],
             cond_df['Period E/W Maneuver Conditions'].iloc[i],
             cond_df['Delta Time E/W Maneuver Conditions'].iloc[i]])
-
     cond_df['N/S Maneuver Likelihood']=0
     for i in range(len(cond_df['Date/Time (UTC)'])):
         cond_df['N/S Maneuver Likelihood'].iloc[i]=sum([
@@ -871,11 +1041,17 @@ if submission:
             cond_df['Inclination N/S Maneuver Conditions'].iloc[i],
             cond_df['Delta Time N/S Maneuver Conditions'].iloc[i]])
 
-
+    #Here I introduce the tab and give a brief expository, also giving the user access
+    #to the df we just populated.
     tab5.header("Predicted Observations")
     tab5.write("The following constitute predicted observations given the satellites usual Classical Orbital Element between observations as well as the usual consistency in taking observations. These are generated entirely by this application and begin at the vehicles last known location while imposing no artificial maneuvers such that you should see the vehicles approximate trajectory if it remains uncouched.")
     tab5.write(cond_df)
 
+    #This starts with a brief expository but really is the outcome of all the work we just did,
+    #outputting charts similar to all the ones we've already done, this time however, the keys
+    #in our key value pairs which alter color and size correspond with unique values in the E/W
+    #Maneuver likelihood column we just made above. This in turn shows how many maneuver conditions
+    #have been met at any given time to sigguest when the next E/W maneuver is most likely. 
     tab5.divider()
     tab5.write("The below graphs indicate E/W maneuver likelihood in terms of each Classical Orbital Element over time. When the conditions for any one COE is within 1 standard deviation from the usual maneuvring parameters seen in the past, that increases the vehicles likelihood by 1, with the overall likelihood being a summation of all parameters, starting at 0 and maxing at 5.")
 
@@ -912,7 +1088,9 @@ if submission:
         fig.set_facecolor('white')
         tab5.pyplot(fig)
 
-
+    #Here I have a brief expository describing when a vehicle should do its next manvuever purely looking
+    #at time relative to the last maneuver(ewmnvrs['Date/Time (UTC)'].iloc[-1]) and the mean of how 
+    #frequently the vehicle maneuvers (ew_boot_deltaobj).
     if ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj > datetime.now():
         tab5.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :green[should occur around {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}]. Looking purely at Maneuver frequency.")
     elif sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']) > 0.1:
@@ -920,6 +1098,11 @@ if submission:
     else: tab5.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have occured {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}]. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
 
 
+    #This starts with a brief expository but really is the outcome of all the work we just did,
+    #outputting charts similar to all the ones we've already done, this time however, the keys
+    #in our key value pairs which alter color and size correspond with unique values in the N/S
+    #Maneuver likelihood column we just made above. This in turn shows how many maneuver conditions
+    #have been met at any given time to sigguest when the next E/W maneuver is most likely. 
     tab5.divider()
     tab5.write("The below graphs indicate N/S maneuver likelihood in terms of each Classical Orbital Element over time. When the conditions for any one COE is within 1 standard deviation from the usual maneuvring parameters seen in the past, that increases the vehicles likelihood by 1, with the overall likelihood being a summation of all parameters, starting at 0 and maxing out at 3.")
     for col in cond_df.columns[1:7]:
@@ -955,13 +1138,22 @@ if submission:
         fig.set_facecolor('white')
         tab5.pyplot(fig)
     
-    
+    #Here I have a brief expository describing when a vehicle should do its next manvuever purely looking
+    #at time relative to the last maneuver(nsmnvrs['Date/Time (UTC)'].iloc[-1]) and the mean of how 
+    #frequently the vehicle maneuvers (ns_boot_deltaobj).
     if nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj > datetime.now():
         tab5.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :green[should occur around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}], looking purely at Maneuver frequency.")
     elif sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']) > 0.1:
         tab5.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :red[should have occured around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}]; However, :orange[{round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period], while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
     else: tab5.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :red[should have occured {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}]. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
 
+
+
+    #Tab6! Almost there!
+
+
+    #Not so brief expository talking about the fidelity of the app; I highly recommend you read this word for word
+    #as it really help understand the pitfalls and strengths of this tool in its current iteration.
     tab6.subheader("Understanding the Sample")
     tab6.write("Generally, when conducting a hypothesis test, it's important to make the distinction that you're working with either the population or a sample thereof... This is where the limitations of our tool will begin to show themselves, though not without answer.")
     tab6.write("First of all, the scope of available data tends to go back around 2 years for each satellite. If the satellite was launched before then, it becomes clear that we're only looking at a sample, as maneuvers conducted prior to available data would not be included in our set. If the vehicle was launched within that window, we have a higher likelihood of actually capturing the population in its entirety, however, this can prove fairly disadvantageous too.")
@@ -971,14 +1163,17 @@ if submission:
     tab6.write("Finally, given that the tool uses changes between observations to determine if a maneuver occurred, if there's a greater time between observations, there's also a greater gap in position between observations as a result of natural motion. With that in mind, any observation that exceeds 3 standard deviations from the normal gap will not be counted as a maneuver to get rid of any 'maneuvers' that are just a result of outliers in observation consistency... This, however, doesn't mean that a maneuver didn't occur during that time, as that's still very well possible.")
     tab6.write("With all this in mind, it becomes evident that it's best to always treat our data, no matter how robust it may look, as a sample when hypothesis testing.")
 
+    #Here we make copies of our different maneuver-specific daraframes and parse out the columns for each that are not
+    #pertinent to determining correlation with maneuver time using Pearson correlation. You may note that I'm taking out
+    #Period as well. This serves a nice academic purpose, but is otherwise colinear with SMA, so I don't want to skew
+    #results by including it in the tests.
     nsmnvrs_delta= nsmnvrs.copy()
     ewmnvrs_delta= ewmnvrs.copy()
 
     for col in nsmnvrs_delta.columns[0:7]:
             for i in range(1,len(nsmnvrs_delta[f'{col} Delta'])):
                 nsmnvrs_delta[f'{col} Delta'].iloc[i] = abs(nsmnvrs_delta[col].iloc[i] - nsmnvrs_delta[col].iloc[i-1])
-    nsmnvrs_delta= nsmnvrs_delta.drop(columns=['Time Residuals',
-                                               'Checkout Period',
+    nsmnvrs_delta= nsmnvrs_delta.drop(columns=['Checkout Period',
                                                'Maneuver Profile',
                                                'Maneuver Detected',
                                                'E/W Maneuver',
@@ -989,8 +1184,7 @@ if submission:
     for col in ewmnvrs_delta.columns[0:7]:
             for i in range(1,len(ewmnvrs_delta[f'{col} Delta'])):
                 ewmnvrs_delta[f'{col} Delta'].iloc[i] = abs(ewmnvrs_delta[col].iloc[i] - ewmnvrs_delta[col].iloc[i-1])
-    ewmnvrs_delta= ewmnvrs_delta.drop(columns=['Time Residuals',
-                                               'Checkout Period',
+    ewmnvrs_delta= ewmnvrs_delta.drop(columns=['Checkout Period',
                                                'Maneuver Profile',
                                                'Maneuver Detected',
                                                'N/S Maneuver',
@@ -1002,84 +1196,28 @@ if submission:
     tab6.header("Hypothesis Tests")
     tab6.write("Our Hypothesis is that Classical Orbital Elements can be used as a metric to predict when future maneuvers will occur... Let's see if we're right!")
 
+
+    #This is where we conduct our tests for N/S maneuvers and then E/W maneuvers in turn. 
+    #Bear in mind the first and last columns in this dataframe are Date/Time and Time between Maneuvers 
+    #respectively, the first of which as an epoch is known to be independent, and the later of which is 
+    #what we're testing against which is why they're both excised from the slice. The output is an expository
+    #which highlights the results for each test as well as a line graph that shows the observed maneuvers over time
+    #so the pearson results should clue you in to focus in on those charts with corrolary features.
     tab6.divider()
     tab6.header("For N/S Maneuver Pearson Correlation...")
     tab6.write(nsmnvrs_delta)
     nsdependencies=[]
     for col in nsmnvrs_delta.columns[1:-1]:        
         tab6.subheader(f'{col}')
-        data1=nsmnvrs_delta[col]
-        data2=nsmnvrs_delta['Time Between Maneuvers']
-        stat, p = scistats.pearsonr(data1,data2)
-        tab6.write('stat=%.3f, p=%.3f' % (stat, p))
-        if p > 0.05:
-            tab6.write(f'{col} likely does :red[NOT] correspond with Time between Maneuvers for N/S Maneuvers and should :red[not] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
-        else: 
-            tab6.write(f'{col} likely :green[corresponds] with Time between Maneuvers for N/S Maneuvers and :green[should] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
-            nsdependencies.append(col)
-        tab6.divider()
 
-    tab6.header("For E/W Maneuver Pearson Correlation...")
-    tab6.write(ewmnvrs_delta)
-    ewdependencies=[]
-    for col in ewmnvrs_delta.columns[1:-1]:
-        tab6.subheader(f'{col}')
-        data1=ewmnvrs_delta[col]
-        data2=ewmnvrs_delta['Time Between Maneuvers']
-        stat, p = scistats.pearsonr(data1,data2)
-        tab6.write('stat=%.3f, p=%.3f' % (stat, p))
-        if p > 0.05:
-            tab6.write(f'{col} likely does :red[NOT] correspond with Time between Maneuvers for E/W Maneuvers and should :red[not] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
-        else: 
-            tab6.write(f'{col} likely :green[corresponds] with Time between Maneuvers for E/W Maneuvers  and :green[should] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
-            ewdependencies.append(col)
-        tab6.divider()
-
-    tab6.header("Hypothesis Test Summary")
-    tab6.write(f"In summation, based on the available data for {sat_name}, of the 20 total tests run against different Classical Orbital Elements and their changes, with :orange[{len(nsdependencies)} total significant parameters] of 10 possible, the Classical Orbital Elements that can best be used to determine N/S Maneuvers are :orange[{nsdependencies}], whereas with :red[{len(ewdependencies)} total significant parameters] of 10 possible, the factors that can be best used to determine E/W Maneuvers are :red[{ewdependencies}].")
-
-
-    
-
-
-
-    for col in ewmnvrs.columns[3:6]:
+        #graph starts here and follows most of the same format as the previous charts.
         colors = {'None':'w', 'Compound Maneuver':'c', 'Intrack Maneuver':'r', 'Crosstrack Maneuver':'y'}
         size = {'None':5, 'Compound Maneuver':50, 'Intrack Maneuver':50, 'Crosstrack Maneuver':50}
         mark = {'None':'.', 'Compound Maneuver':'*', 'Intrack Maneuver':'>', 'Crosstrack Maneuver':'o'}
         opacity = {'None':0.2, 'Compound Maneuver':1, 'Intrack Maneuver':1, 'Crosstrack Maneuver':1}
         fig, ax = plt.subplots()
-        datax=ewmnvrs['Date/Time (UTC)']
-        datay=ewmnvrs[col]
-        ax.plot(datax, 
-               datay,
-               color='r')
-        ax.set_title(f'{col} vs Time',size=30) 
-        ax.set_xlabel('Epoch', size = 20) 
-        if col == 'SMA': 
-            ax.set_ylabel(f'{col} (Kilometers)', size = 20)
-        elif col == 'Period':
-            ax.set_ylabel(f'{col} (Seconds)', size = 20)
-        elif col == 'Eccentricity':
-            ax.set_ylabel(f'{col}', size = 20)
-        else: ax.set_ylabel(f'{col} (Degrees)', size = 20)
-        ax.grid(axis='y',color='white')
-        ax.grid(which='minor',axis='x',color='white')
-        fig.tight_layout()
-        fig.set_figwidth(20)
-        fig.set_figheight(10)
-        ax.set_facecolor('black')
-        fig.set_facecolor('white')
-        tab6.pyplot(fig)
-
-    for col in nsmnvrs.columns[1:3]:
-        colors = {'None':'w', 'Compound Maneuver':'c', 'Intrack Maneuver':'r', 'Crosstrack Maneuver':'y'}
-        size = {'None':5, 'Compound Maneuver':50, 'Intrack Maneuver':50, 'Crosstrack Maneuver':50}
-        mark = {'None':'.', 'Compound Maneuver':'*', 'Intrack Maneuver':'>', 'Crosstrack Maneuver':'o'}
-        opacity = {'None':0.2, 'Compound Maneuver':1, 'Intrack Maneuver':1, 'Crosstrack Maneuver':1}
-        fig, ax = plt.subplots()
-        datax=nsmnvrs['Date/Time (UTC)']
-        datay=nsmnvrs[col]
+        datax=nsmnvrs_delta['Date/Time (UTC)']
+        datay=nsmnvrs_delta[col]
         ax.plot(datax, 
                datay,
                color='y')
@@ -1101,41 +1239,67 @@ if submission:
         fig.set_facecolor('white')
         tab6.pyplot(fig)
 
+        #pearson corrolation
+        data1=nsmnvrs_delta[col]
+        data2=nsmnvrs_delta['Time Between Maneuvers']
+        stat, p = scistats.pearsonr(data1,data2)
+        tab6.write('stat=%.3f, p=%.3f' % (stat, p))
+        if p > 0.05:
+            tab6.write(f'{col} likely does :red[NOT] correspond with Time between Maneuvers for N/S Maneuvers and should :red[not] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
+        else: 
+            tab6.write(f'{col} likely :green[corresponds] with Time between Maneuvers for N/S Maneuvers and :green[should] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
+            nsdependencies.append(col)
+        tab6.divider()
 
+    tab6.header("For E/W Maneuver Pearson Correlation...")
+    tab6.write(ewmnvrs_delta)
+    ewdependencies=[]
+    for col in ewmnvrs_delta.columns[1:-1]:
+        tab6.subheader(f'{col}')
 
-   # fig, axs = plt.subplots()
-   # x=cond_df['Date/Time (UTC)']
-   # axs.plot(x,cond_df['E/W Maneuver Likelihood'])
-   # axs.plot(x,cond_df['N/S Maneuver Likelihood'])
-   # fig.set_figwidth(20)
-   # fig.set_figheight(10)
-   # axs.set_facecolor('black')
-   # fig.set_facecolor('white')
-   # tab5.pyplot(fig)
+        #graph starts here and follows most of the same format as the previous charts.
+        colors = {'None':'w', 'Compound Maneuver':'c', 'Intrack Maneuver':'r', 'Crosstrack Maneuver':'y'}
+        size = {'None':5, 'Compound Maneuver':50, 'Intrack Maneuver':50, 'Crosstrack Maneuver':50}
+        mark = {'None':'.', 'Compound Maneuver':'*', 'Intrack Maneuver':'>', 'Crosstrack Maneuver':'o'}
+        opacity = {'None':0.2, 'Compound Maneuver':1, 'Intrack Maneuver':1, 'Crosstrack Maneuver':1}
+        fig, ax = plt.subplots()
+        datax=ewmnvrs_delta['Date/Time (UTC)']
+        datay=ewmnvrs_delta[col]
+        ax.plot(datax, 
+               datay,
+               color='r')
+        ax.set_title(f'{col} vs Time',size=30) 
+        ax.set_xlabel('Epoch', size = 20) 
+        if col == 'SMA': 
+            ax.set_ylabel(f'{col} (Kilometers)', size = 20)
+        elif col == 'Period':
+            ax.set_ylabel(f'{col} (Seconds)', size = 20)
+        elif col == 'Eccentricity':
+            ax.set_ylabel(f'{col}', size = 20)
+        else: ax.set_ylabel(f'{col} (Degrees)', size = 20)
+        ax.grid(axis='y',color='white')
+        ax.grid(which='minor',axis='x',color='white')
+        fig.tight_layout()
+        fig.set_figwidth(20)
+        fig.set_figheight(10)
+        ax.set_facecolor('black')
+        fig.set_facecolor('white')
+        tab6.pyplot(fig)
 
-    #modelns= LinearRegression()
-    #yns=nsmnvrs['Date/Time (UTC)']
-    #for col in cond_df.columns[1:7]:
-    #    xns=nsmnvrs[col]
-    #    modelns.fit(xns,yns)
-    #    modelns.predict([[2]])
-    #    modelns.coef_
-    #    modelns.intercept_
+        #pearson corrolation
+        data1=ewmnvrs_delta[col]
+        data2=ewmnvrs_delta['Time Between Maneuvers']
+        stat, p = scistats.pearsonr(data1,data2)
+        tab6.write('stat=%.3f, p=%.3f' % (stat, p))
+        if p > 0.05:
+            tab6.write(f'{col} likely does :red[NOT] correspond with Time between Maneuvers for E/W Maneuvers and should :red[not] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
+        else: 
+            tab6.write(f'{col} likely :green[corresponds] with Time between Maneuvers for E/W Maneuvers  and :green[should] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
+            ewdependencies.append(col)
+        tab6.divider()
 
+    #Here we summarize the test results so you can see which orbital elements are the best indicators of 
+    #the chosen vehicles likelihood to maneuver.  
+    tab6.header("Hypothesis Test Summary")
+    tab6.write(f"In summation, based on the available data for {sat_name}, of the 20 total tests run against different Classical Orbital Elements and their changes, with :orange[{len(nsdependencies)} total significant parameters] of 10 possible, the Classical Orbital Elements that can best be used to determine N/S Maneuvers are :orange[{nsdependencies}], whereas with :red[{len(ewdependencies)} total significant parameters] of 10 possible, the factors that can be best used to determine E/W Maneuvers are :red[{ewdependencies}].")
 
-   # for i in range(1,501):
-   #     cond_df['Date/Time (UTC)'].iloc[i] = cond_df['Date/Time (UTC)'].iloc[i-1] + timedelta(seconds=bootstrap_bill(time_delta_sec,1)[0])
-              
-
-
-   #st.write(cond_df)
-
-    ##pages = st.navigation([st.Page('./pages/orbit_determination.py'), st.Page('./pages/maneuver_model.py')])
-    #pages.run()
-
-    
-
-    #n = len(sat_mnvr_df['Date/Time (UTC)'])
-    #n_holdout = int(n*0.2)
-    #st.write(f"{n} records total, holding out {n_holdout}")
-    
