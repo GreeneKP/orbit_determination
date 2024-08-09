@@ -1,5 +1,9 @@
 # Orbit Predictor
 
+## Readme Preface
+
+It is my highest recommendation that you have the applicatino open and running along side this readme while going through. While the readme does a decent job at explaining the application, most of the expository IN the application actually dives into the weeds itself on how and why it works, while having the added benefit of procedurally generating the history and predicted future of your chosen satellite so you can learn about orbital analysis in the CONTEXT of seeing your chosen satellites data.  
+
 ## Packages
 
 This application requires access to the following packages to run locally:
@@ -35,13 +39,13 @@ The second tab describes how the tool determines whether or not a maneuver occur
 'Did someone drive my car today?' may seem like an innocuous way to describe maneuver detection, but bear with the analogy... There are a couple ways to determine if someone drove my car today. If I drove it, I have first-hand experience, so there's one way! Another is if my wife's nice enough to to tell me she drove my car to the store today. Assuming, however, I don't have access to the odometer, the only other way is to open the door to my garage and check if my car is there or not. Our means of maneuver detection, in this case, is exactly that; Where every data point is NORAD opening the 'garage door' to see if the satellites are all where we expect them to be since we last checked... If they're not, we can assume someone took'em for a joyride! Detecting a difference is only one piece of the puzzle though; The other is determining the nature of the change!
 
 
-Image ex--
+![alt text](images/int_det_img.jpg)
 
 
 The Classical Orbital Elements that inevitably MUST change when doing an Intrack maneuver are Eccentricity and Semimajor Axis. Note in the example above that a Negative Intrack Maneuver (that is, a maneuver against the current direction of motion,) will result in a smaller SMA and higher Eccentricity, whereas a Positive Intrack Maneuver also results in an increase in Eccentricity, but now an increase in SMA. Note that these maneuvers may also have an effect on Argument of Perigee depending on both the magnitude, direction(positive/negative), and when in the orbit the maneuver is done. In our example where it looks like we're in a relatively circular orbit to start, if we do the suggested Negative Intrack Maneuver, it looks like our Perigee will shift to be exactly 180 degrees from our current position. By constrast, if we did the shown Positive Intrack Maneuver, our CURRENT position would now become Perigee! Mind you, there is a significant gradient in terms of maneuver magnitude between these two scenarios. It's worth noting as well that Eccentricity can be changed on its own by doing a Radial Maneuver, that is a maneuver that is directly towards or away from the Earth. These can be used to help shape (usually circularize) an orbit, but are fairly expensive on their own and are usually done in conjunction with an Intrack Maneuver to offset the cost for a similar result.
 
 
-Image ex--
+![alt text](images/ct_det_img.jpg)
 
 
 Crosstrack Maneuvers, that is maneuvers perpendicular to the direction of motion (sometimes called North/South Maneuver... which can be helpful, but also really misleading for satellites with high inclination since their direction of motion very well may be North or South!) and their effect on an orbit have as much to do with the time and position in the orbit that they occur as the magnitude and direction. Angular momentum is the heavy-hitter here in terms of limitting what is and is not possible for a satellite with the satellites orbit effectively being like a gyro, such that it's highly resistant to change. As such, the Ascending and Descending Nodes can be thought of like an 'axel' on which our Inclination can rotate. With this in mind, a Positive Crosstrack Maneuver at the Ascending Node results in an increased Inclination as in our example above, whereas a Negative Crosstrack Burn at this same position would result in a lower Inclination.
