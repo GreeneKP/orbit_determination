@@ -1,5 +1,5 @@
 """
-start demo with...
+start local demo with...
 conda activate
 Streamlit
 streamlit run main.py
@@ -854,7 +854,7 @@ if submission:
 
     tab3.divider()
     tab3.subheader("Maneuver History")
-    #Here we start looking at maneuver histpry starting with N/S maneuvers,
+    #Here we start looking at maneuver history starting with N/S maneuvers,
     #first making a dataframe consisting only of the N/S maneuvers from the original sat_mnvr_df.
     #Then we give a brief expository on the vehicles N/S maneuvers using the dataframe
     #we just created.
@@ -1246,10 +1246,18 @@ if submission:
         data2=nsmnvrs_delta['Time Between Maneuvers']
         stat, p = scistats.pearsonr(data1,data2)
         tab6.write('stat=%.3f, p=%.3f' % (stat, p))
+        corrolation_str = ':red[Weak]'
+        if abs(stat) > 0.6:
+            corrolation_str = ':green[Strong]'
+        elif abs(stat) > 0.3:
+            corrolation_str = ':orange[Moderate]'
+        tab6.write(f'There is a {corrolation_str} statistic corrolation between {col} and Time between maneuvers.')
+
         if p > 0.05:
             tab6.write(f'{col} likely does :red[NOT] correspond with Time between Maneuvers for N/S Maneuvers and should :red[not] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
         else: 
             tab6.write(f'{col} likely :green[corresponds] with Time between Maneuvers for N/S Maneuvers and :green[should] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
+        if abs(stat) > 0.3 and p < 0.05:
             nsdependencies.append(col)
         tab6.divider()
 
@@ -1293,10 +1301,17 @@ if submission:
         data2=ewmnvrs_delta['Time Between Maneuvers']
         stat, p = scistats.pearsonr(data1,data2)
         tab6.write('stat=%.3f, p=%.3f' % (stat, p))
+        corrolation_str = ':red[Weak]'
+        if abs(stat) > 0.6:
+            corrolation_str = ':green[Strong]'
+        elif abs(stat) > 0.3:
+            corrolation_str = ':orange[Moderate]'
+        tab6.write(f'There is a {corrolation_str} statistic corrolation between {col} and Time between maneuvers.')
         if p > 0.05:
             tab6.write(f'{col} likely does :red[NOT] correspond with Time between Maneuvers for E/W Maneuvers and should :red[not] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
         else: 
             tab6.write(f'{col} likely :green[corresponds] with Time between Maneuvers for E/W Maneuvers  and :green[should] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
+        if abs(stat) > 0.3 and p < 0.05:
             ewdependencies.append(col)
         tab6.divider()
 
