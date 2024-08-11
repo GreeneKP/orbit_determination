@@ -1262,9 +1262,9 @@ if submission:
             tab6.write(f'There is a {corrolation_str} statistic corrolation between {col} and Time between maneuvers.')
 
             if p > 0.05:
-                tab6.write(f'{col} likely does :red[NOT] correspond with Time between Maneuvers for N/S Maneuvers and should :red[not] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
+                tab6.write(f'{col} likely does :red[NOT] correspond with Time between Maneuvers for N/S Maneuvers and should :red[not] be weighed as a parameter for predicting this type of Maneuver for {sat_name} with regard to its p-value.')
             else: 
-                tab6.write(f'{col} likely :green[corresponds] with Time between Maneuvers for N/S Maneuvers and :green[should] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
+                tab6.write(f'{col} likely :green[corresponds] with Time between Maneuvers for N/S Maneuvers and :green[should] be weighed as a parameter for predicting this type of Maneuver for {sat_name} with regard to its p-value.')
             if abs(stat) > 0.3 and p < 0.05:
                 nsdependencies.append(col)
             tab6.divider()
@@ -1316,9 +1316,9 @@ if submission:
                 corrolation_str = ':orange[Moderate]'
             tab6.write(f'There is a {corrolation_str} statistic corrolation between {col} and Time between maneuvers.')
             if p > 0.05:
-                tab6.write(f'{col} likely does :red[NOT] correspond with Time between Maneuvers for E/W Maneuvers and should :red[not] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
+                tab6.write(f'{col} likely does :red[NOT] correspond with Time between Maneuvers for E/W Maneuvers and should :red[not] be weighed as a parameter for predicting this type of Maneuver for {sat_name} with regard to its p-value.')
             else: 
-                tab6.write(f'{col} likely :green[corresponds] with Time between Maneuvers for E/W Maneuvers  and :green[should] be weighed as a parameter for predicting this type of Maneuver for {sat_name}.')
+                tab6.write(f'{col} likely :green[corresponds] with Time between Maneuvers for E/W Maneuvers  and :green[should] be weighed as a parameter for predicting this type of Maneuver for {sat_name} with regard to its p-value.')
             if abs(stat) > 0.3 and p < 0.05:
                 ewdependencies.append(col)
             tab6.divider()
