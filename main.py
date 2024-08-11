@@ -261,7 +261,13 @@ sat_owner_set= {"AB":	"the Arab Satellite Communications Organization"
 #Setup done! Let's get started!
 
 
-
+#added this to start session timer; in retrospect I'll be caching databases and previously-run satellites 
+#in the session too, but for now I'll take my lickings for having not realized that streamlit wouldn't update
+#my github repository as it does locally. I know how to make this work in retrospect, but to use it to store my
+#dataframe and retroactively aler all my cleaning operations after reading would be to hefty of a time-sink this
+#late in the game. That's a'comin' later on this week though!
+if 'Timestamp' not in st.session_state:
+            st.session_state['Timestamp'] = datetime.now()   
 
 
 
@@ -277,9 +283,20 @@ st.title("Satellite Maneuver Predictor")
 #(3 hrs) to re-pull the data, per Dr. Kelso to avoid this being seen as a DDOS attack.
 #If the condition to pull a new file has been met, it not only reads the file, but also
 #immediately files it away to reset the 3-hour clock so we play nicely with our NORAD friends.
-satcat_time = pd.read_csv("data/satcat.csv")['Timestamp'].iloc[0][:19]
-date_format = '%Y-%m-%d %H:%M:%S'
-new_time = datetime.strptime(satcat_time, date_format)
+#In retrospect, I'm finding the reason this works LOCALLY and not on streamlit is that Streamlit
+#cannot update Github. will be utilizing streamlit session state going froward as seen in the below 
+#timestamp sample.
+
+if datetime.now()-st.session_state['Timestamp']>timedelta(minutes=30):
+        st.session_state['Timestamp'] = datetime.now()
+
+#if local, use these, otherwise...
+#satcat_time = pd.read_csv("data/satcat.csv")['Timestamp'].iloc[0][:19]
+#date_format = '%Y-%m-%d %H:%M:%S'
+#new_time = datetime.strptime(satcat_time, date_format)
+
+new_time = st.session_state['Timestamp']
+
 timestamp_difference = datetime.now() - new_time
 if timestamp_difference > timedelta(hours=3):
     satcat = pd.read_csv("https://celestrak.org/pub/satcat.csv")
@@ -292,8 +309,8 @@ else: satcat = pd.read_csv("data/satcat.csv")
 #every 24 hours and rarely sees changes at that. This still increases the chances of catching something
 #as soon as it happens though!
 if timestamp_difference > timedelta(hours= 3):
-    st.write(f'Last Satellite Catalog ran at :red[{new_time} UTC]. Next update available :green[Now]! This may affect the satellites you can choose from below.')
-else: st.write(f'Last Satellite Catalog ran at :red[{new_time} UTC]. Next update available at :orange[{new_time + timedelta(hours=3)} UTC]. This may affect the satellites you can choose from below.')
+    st.write(f'Last Satellite Catalog ran at :red[{new_time}]. Next update available :green[Now]! This may affect the satellites you can choose from below.')
+else: st.write(f'Last Satellite Catalog ran at :red[{new_time} UTC]. Next update available at :orange[{new_time + timedelta(hours=3)}]. This may affect the satellites you can choose from below.')
 
 
 
