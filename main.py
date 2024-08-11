@@ -277,8 +277,6 @@ st.title("Satellite Maneuver Predictor")
 #(3 hrs) to re-pull the data, per Dr. Kelso to avoid this being seen as a DDOS attack.
 #If the condition to pull a new file has been met, it not only reads the file, but also
 #immediately files it away to reset the 3-hour clock so we play nicely with our NORAD friends.
-#that being said, I pushed this out to 48 hours since frankly the satcat doesn't get updated
-#all that often.
 satcat_time = pd.read_csv("data/satcat.csv")['Timestamp'].iloc[0][:19]
 date_format = '%Y-%m-%d %H:%M:%S'
 new_time = datetime.strptime(satcat_time, date_format)
@@ -294,8 +292,8 @@ else: satcat = pd.read_csv("data/satcat.csv")
 #every 24 hours and rarely sees changes at that. This still increases the chances of catching something
 #as soon as it happens though!
 if timestamp_difference > timedelta(hours= 3):
-    st.write(f'Last Satellite Catalog ran at :red[{new_time}]. Next update available :green[Now]! This may affect the satellites you can choose from below.')
-else: st.write(f'Last Satellite Catalog ran at :red[{new_time}]. Next update available at :orange[{new_time + timedelta(hours=3)}]. This may affect the satellites you can choose from below.')
+    st.write(f'Last Satellite Catalog ran at :red[{new_time} UTC]. Next update available :green[Now]! This may affect the satellites you can choose from below.')
+else: st.write(f'Last Satellite Catalog ran at :red[{new_time} UTC]. Next update available at :orange[{new_time + timedelta(hours=3)}]. This may affect the satellites you can choose from below.')
 
 
 
@@ -424,7 +422,7 @@ if submission:
         #malicious from NORAD's perspective. After getting that data, we use an above created function in
         #conjunction with StringIO to put the data we want in a format that can be read, then turn it into
         #our dataframe.
-        if timestamp_difference > timedelta(hours=5) or pd.read_csv("data/sat_pos_history.csv")['SATCAT Number'].iloc[0] != sat_num:
+        if timestamp_difference > timedelta(hours=3) or pd.read_csv("data/sat_pos_history.csv")['SATCAT Number'].iloc[0] != sat_num:
             zip_response = get(f"https://celestrak.org/NORAD/elements/graph-orbit-data.php?CATNR={sat_num}")
             data4csv = fetch_csv_data(zip_response.text)
             in_data = StringIO(data4csv)
