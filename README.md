@@ -2,7 +2,7 @@
 
 ## Readme Preface
 
-It is my highest recommendation that you have the applicatino open and running along side this readme while going through. While the readme does a decent job at explaining the application, most of the expository IN the application actually dives into the weeds itself on how and why it works, while having the added benefit of procedurally generating the history and predicted future of your chosen satellite so you can learn about orbital analysis in the CONTEXT of seeing your chosen satellites data.  
+It is my highest recommendation that you have the application open and running along side this readme while going through. While the readme does a decent job at explaining the application, most of the expository IN the application actually dives into the weeds itself on how and why it works, while having the added benefit of procedurally generating the history and predicted future of your chosen satellite so you can learn about orbital analysis in the CONTEXT of seeing your chosen satellites data.  
 
 ## Packages
 
