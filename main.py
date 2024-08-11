@@ -293,7 +293,7 @@ else: satcat = pd.read_csv("data/satcat.csv")
 #as soon as it happens though!
 if timestamp_difference > timedelta(hours= 3):
     st.write(f'Last Satellite Catalog ran at :red[{new_time} UTC]. Next update available :green[Now]! This may affect the satellites you can choose from below.')
-else: st.write(f'Last Satellite Catalog ran at :red[{new_time} UTC]. Next update available at :orange[{new_time + timedelta(hours=3)}]. This may affect the satellites you can choose from below.')
+else: st.write(f'Last Satellite Catalog ran at :red[{new_time} UTC]. Next update available at :orange[{new_time + timedelta(hours=3)} UTC]. This may affect the satellites you can choose from below.')
 
 
 
