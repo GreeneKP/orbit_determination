@@ -92,7 +92,10 @@ With all this in mind, it becomes evident that it's best to always treat our dat
 
 
 As for the tests themselves, we’re looking for Pearson correlation for Time Between Maneuvers and each of our features and their Deltas, being in totality Time v.s. RAAN, Inclination, Argument of Perigee, SMA, Eccentricity, RAAN Delta, Inclination Delta, Argument of Perigee Delta, SMA Delta, and Eccentricity Delta… for N/S and E/W Maneuvers separately. Particularly in terms of displaying this information, showing the corollary value from a Pearson test seemed the best way to satisfy our question of whether or not Classical Orbital Elements can be used to predict a satellites future maneuvers.
- 
+
+## Folder and File Orientation
+
+The only two folders I use are images and data folders. images contains all jpegs used to create the still orbit examples on tabs 1 and 2 as well as the additional screen-grabs used for this readme. The data folders contains the satcat.csv as well as the sat_pos_history.csv from where all the data on an individual satellite is stored. You may also notice a tle.csv file. This is a two-line-element (TLE) set and was originally used in an earlier iteration of the tool. It is my intent to reintegrate it into future iterations of the tool soas to increase its fidelity by using the TLE to calculate J2 Perturbations, in so doing getting a more accurate grasp on a satellites motion with respect to the gravitational pull of third-bodies over time. Other files include a powerpoint I used to introduce the tool to my peers, as well as the pipfile and its respective lockfile, used to reimage the libraries needed to run the main file.
 
  
 
