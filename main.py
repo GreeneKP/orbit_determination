@@ -310,7 +310,7 @@ else: satcat = pd.read_csv("data/satcat.csv")
 #as soon as it happens though!
 if timestamp_difference > timedelta(hours= 3):
     st.write(f'Last Satellite Catalog ran at :red[{new_time}]. Next update available :green[Now]! This may affect the satellites you can choose from below.')
-else: st.write(f'Last Satellite Catalog ran at :red[{new_time} UTC]. Next update available at :orange[{new_time + timedelta(hours=3)}]. This may affect the satellites you can choose from below.')
+else: st.write(f'Last Satellite Catalog ran at :red[{new_time}]. Next update available at :orange[{new_time + timedelta(hours=3)}]. This may affect the satellites you can choose from below.')
 
 
 
@@ -1352,4 +1352,4 @@ if submission:
         tab6.write(f"In summation, based on the available data for {sat_name}, of the 20 total tests run against different Classical Orbital Elements and their changes, with :orange[{len(nsdependencies)} total significant parameters] of 10 possible, the Classical Orbital Elements that can best be used to determine N/S Maneuvers are :orange[{nsdependencies}], whereas with :red[{len(ewdependencies)} total significant parameters] of 10 possible, the factors that can be best used to determine E/W Maneuvers are :red[{ewdependencies}].")
     except:
         st.header(":red[Awww, Fish Paste!]")
-        st.write(f"Looks like {sat_name} doesn't have enough data for the tool to work properly or has been run too many times in too short a window to continue to populate! Please orange:[select another satellite of interest] or green:[try again in the future] as more data becomes available! If the application was just working recently for this satellite, you may need to wait 3 hours to view this satellite again!")
+        st.write(f"Looks like {sat_name} doesn't have enough data for the tool to work properly or has been run too many times in too short a window to continue to populate! Please :orange[select another satellite of interest] or :green[try again in the future] as more data becomes available! If the application was just working recently for this satellite, you may need to wait 3 hours to view this satellite again!")
