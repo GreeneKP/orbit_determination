@@ -378,7 +378,7 @@ if submission:
 
         #Blurb introducing the user to some identifying information about their satellite while the rest of
         #the app builds out.
-        st.write(f"Showing results for {sat_name}, NORAD Satcat Number {sat_num}, owned by {sat_owner_set[satcat['OWNER'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]]}, and launched {satcat['LAUNCH_DATE'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}. For a complete rundown on how to analyze this orbit, refer to the tabs sequentially from left to right. Otherwise, select the tab to best suit your needs, with Pocket Orbital Analyst being the most surface-level, simple report on {sat_name}.")
+        st.write(f"Showing results for {sat_name}, NORAD Satcat Number {sat_num}, owned by {sat_owner_set[satcat['OWNER'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]]}, and launched {satcat['LAUNCH_DATE'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}. For a complete rundown on how to analyze this orbit, refer to the tabs sequentially from left to right (there are 6 in total; you may have to select one tab and then use arrow keys to tab left or right as they may not seem immediately viewable depending on the platform you're viewing from). Otherwise, select the tab to best suit your needs, with Pocket Orbital Analyst being the most surface-level, simple report on {sat_name}.")
 
         #wanted to organize with with tabs rather than pages to cut down on intermittent loading time, instead
         #just having it load all at once at the outset. Additionally, this spares me the headache of trying to 
