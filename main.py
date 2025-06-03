@@ -1373,7 +1373,7 @@ if submission:
         for i in range(len(justDateTime)):
             justDateTime[i] = round(justDateTime[i],2)
 
-
+        tab3.divider()
         tab3.subheader("Observation Frequency")
         tab3.write(f"The average observation frequency for {sat_name} is {round(tletime_bootstrap/3600,3)} hours with it's last published observation occurring at {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]}, meaning its next 5 observations :green[should be seen by] around \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*1)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*2)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*3)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*4)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*5)} respectively.")
 
