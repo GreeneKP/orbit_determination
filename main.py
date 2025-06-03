@@ -1351,48 +1351,48 @@ if submission:
 
                 #begin brf updates
 
-        sat_mnvr_df["Time"] = None
-        for i in range(len(sat_mnvr_df["Date/Time (UTC)"])):
-            sat_mnvr_df["Time"].iloc[i] = sat_mnvr_df["Date/Time (UTC)"].iloc[i].time()
+#         sat_mnvr_df["Time"] = None
+#         for i in range(len(sat_mnvr_df["Date/Time (UTC)"])):
+#             sat_mnvr_df["Time"].iloc[i] = sat_mnvr_df["Date/Time (UTC)"].iloc[i].time()
 
-        sat_mnvr_df['Time Between obs'] = None
-        for i in range(1,len(sat_mnvr_df['Date/Time (UTC)'])):
-            sat_mnvr_df['Time Between obs'].iloc[i] = abs(sat_mnvr_df['Date/Time (UTC)'].iloc[i] - sat_mnvr_df['Date/Time (UTC)'].iloc[i-1]).total_seconds()
+#         sat_mnvr_df['Time Between obs'] = None
+#         for i in range(1,len(sat_mnvr_df['Date/Time (UTC)'])):
+#             sat_mnvr_df['Time Between obs'].iloc[i] = abs(sat_mnvr_df['Date/Time (UTC)'].iloc[i] - sat_mnvr_df['Date/Time (UTC)'].iloc[i-1]).total_seconds()
 
-        tletime_bootstrap = np.mean(bootstrap_bill(sat_mnvr_df['Time Between obs']))
-        tle_boot_deltaobj = timedelta(seconds=tletime_bootstrap)
+#         tletime_bootstrap = np.mean(bootstrap_bill(sat_mnvr_df['Time Between obs']))
+#         tle_boot_deltaobj = timedelta(seconds=tletime_bootstrap)
 
-        justDateTime = []
-        for timeobj in sat_mnvr_df["Time"]:
-            if type(timeobj) != type(int)and type(timeobj) != type(float):
-                justDateTime.append(timeobj)
-# 
-        for i in range(len(justDateTime)):
-            justDateTime[i] = ((justDateTime[i].hour*60)+justDateTime[i].minute)/1440
-# 
-        for i in range(len(justDateTime)):
-            justDateTime[i] = round(justDateTime[i],2)
+#         justDateTime = []
+#         for timeobj in sat_mnvr_df["Time"]:
+#             if type(timeobj) != type(int)and type(timeobj) != type(float):
+#                 justDateTime.append(timeobj)
+# # 
+#         for i in range(len(justDateTime)):
+#             justDateTime[i] = ((justDateTime[i].hour*60)+justDateTime[i].minute)/1440
+# # 
+#         for i in range(len(justDateTime)):
+#             justDateTime[i] = round(justDateTime[i],2)
 
-        tab3.divider()
-        tab3.subheader("Observation Frequency")
-        tab3.write(f"The average observation frequency for {sat_name} is {round(tletime_bootstrap/3600,3)} hours with it's last published observation occurring at {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]}, meaning its next 5 observations :green[should be seen by] around \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*1)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*2)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*3)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*4)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*5)} respectively.")
+#         tab3.divider()
+#         tab3.subheader("Observation Frequency")
+#         tab3.write(f"The average observation frequency for {sat_name} is {round(tletime_bootstrap/3600,3)} hours with it's last published observation occurring at {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]}, meaning its next 5 observations :green[should be seen by] around \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*1)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*2)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*3)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*4)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*5)} respectively.")
 
-        #below in pockiet OA tab as well
-        print(f"E/W maneuver average time interval is {tletime_bootstrap} seconds, meaning its next 5 observations should occur at :green[should be observed by] around {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*1)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*2)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*3)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*4)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*5)} respectively.")
-        dates = justDateTime
-        #Create the histogram
+#         #below in pockiet OA tab as well
+#         print(f"E/W maneuver average time interval is {tletime_bootstrap} seconds, meaning its next 5 observations should occur at :green[should be observed by] around {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*1)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*2)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*3)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*4)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*5)} respectively.")
+#         dates = justDateTime
+#         #Create the histogram
 
-        fig, ax = plt.subplots()
+#         fig, ax = plt.subplots()
 
-        plt.hist(dates, bins=48)
-        # 
-        #dd labels and title
-        plt.xlabel('Time')
-        plt.ylabel('Frequency')
-        plt.title('Histogram of TLE Delivery')
-        # 
-        #Show the plot
-        tab3.pyplot(fig)
+#         plt.hist(dates, bins=48)
+#         # 
+#         #dd labels and title
+#         plt.xlabel('Time')
+#         plt.ylabel('Frequency')
+#         plt.title('Histogram of TLE Delivery')
+#         # 
+#         #Show the plot
+#         tab3.pyplot(fig)
 
         #kneejerk to tab three because I have the brain of a squirrel!
 
