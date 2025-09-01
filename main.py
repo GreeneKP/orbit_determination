@@ -1379,7 +1379,7 @@ if submission:
 
         #below in pockiet OA tab as well
         print(f"E/W maneuver average time interval is {tletime_bootstrap} seconds, meaning its next 5 observations should occur at :green[should be observed by] around {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*1)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*2)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*3)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*4)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*5)} respectively.")
-        dates = justDateTime
+        dates = justDateTime*24
         #Create the histogram
 
         fig, ax = plt.subplots()
@@ -1400,5 +1400,6 @@ if submission:
     except:
         st.header(":red[Awww, Fish Paste!]")
         st.write(f"Looks like {sat_name} doesn't have enough data for the tool to work properly or has been run too many times in too short a window to continue to populate! Please :orange[select another satellite of interest] or :green[try again in the future] as more data becomes available! If the application was just working recently for this satellite, you may need to wait 3 hours to view this satellite again!")
+
 
 
