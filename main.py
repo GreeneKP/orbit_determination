@@ -378,7 +378,7 @@ if submission:
 
         #Blurb introducing the user to some identifying information about their satellite while the rest of
         #the app builds out.
-        st.write(f"Showing results for {sat_name}, NORAD Satcat Number {sat_num}, owned by {sat_owner_set[satcat['OWNER'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]]}, and launched {satcat['LAUNCH_DATE'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}. For a complete rundown on how to analyze this orbit, refer to the tabs sequentially from left to right. Otherwise, select the tab to best suit your needs, with Pocket Orbital Analyst being the most surface-level, simple report on {sat_name}.")
+        st.write(f"Showing results for {sat_name}, NORAD Satcat Number {sat_num}, owned by {sat_owner_set[satcat['OWNER'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]]}, and launched {satcat['LAUNCH_DATE'].loc[satcat['NORAD_CAT_ID'] == sat_num].iloc[0]}. For a complete rundown on how to analyze this orbit, refer to the tabs sequentially from left to right (there are 6 in total; you may have to select one tab and then use arrow keys to tab left or right as they may not seem immediately viewable depending on the platform you're viewing from). Otherwise, select the tab to best suit your needs, with Pocket Orbital Analyst being the most surface-level, simple report on {sat_name}.")
 
         #wanted to organize with with tabs rather than pages to cut down on intermittent loading time, instead
         #just having it load all at once at the outset. Additionally, this spares me the headache of trying to 
@@ -587,7 +587,6 @@ if submission:
                 and sat_mnvr_df['Date/Time (UTC)'].iloc[i] < nominal_ops_date:
                 sat_mnvr_df['Checkout Period'].iloc[i] = True
 
-
         sat_mnvr_df=sat_mnvr_df.dropna()
 
         #Here I make a new dataframe and redo the Delta columns for later use,
@@ -621,6 +620,9 @@ if submission:
 
 
 
+
+
+        #kneejerk to tab three because I have the brain of a squirrel!
 
 
 
@@ -921,10 +923,10 @@ if submission:
         nstime_bootstrap = np.mean(bootstrap_bill(nsmnvrs['Time Between Maneuvers']))
         ns_boot_deltaobj = timedelta(seconds=nstime_bootstrap)
         if nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj > datetime.now():
-            tab3.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :green[should occur] around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}, looking purely at maneuver frequency. For higher fidelity, continue to the Maneuver Prediction section.")
+            tab3.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :green[should be observed by] around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}, looking purely at maneuver frequency. For higher fidelity, continue to the Maneuver Prediction section.")
         elif sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']) > 0.1:
-            tab3.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :red[should have occured] around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}; However, :orange[{round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period], while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
-        else: tab3.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :red[should have occured] {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
+            tab3.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :red[should have been observed by] around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}; However, :orange[{round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period], while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
+        else: tab3.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :red[should have been observed by] {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
 
 
         #Here we look at maneuver history in terms of E/W maneuvers,
@@ -958,10 +960,10 @@ if submission:
         ewtime_bootstrap = np.mean(bootstrap_bill(ewmnvrs['Time Between Maneuvers']))
         ew_boot_deltaobj = timedelta(seconds=ewtime_bootstrap)
         if ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj > datetime.now():
-            tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :green[should occur] around {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}, looking purely at maneuver frequency. For higher fidelity, continue to thew Maneuver Prediciton section.")
+            tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :green[should be observed by] around {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}, looking purely at maneuver frequency. For higher fidelity, continue to thew Maneuver Prediciton section.")
         elif sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']) > 0.1:
-            tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have occured] {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}, looking purely at maneuver frequency. However, :orange[{round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period], while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
-        else: tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have occured] {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}, looking purely at maneuver frequency. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
+            tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have been observed by] {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}, looking purely at maneuver frequency. However, :orange[{round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period], while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
+        else: tab3.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have been observed by] {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}, looking purely at maneuver frequency. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
 
 
         #Here I create I list of all times in the Date/Time Delta column from our
@@ -1123,10 +1125,10 @@ if submission:
         #at time relative to the last maneuver(ewmnvrs['Date/Time (UTC)'].iloc[-1]) and the mean of how 
         #frequently the vehicle maneuvers (ew_boot_deltaobj).
         if ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj > datetime.now():
-            tab5.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :green[should occur around {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}], looking purely at Maneuver frequency.")
+            tab5.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :green[should be observed by around {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}], looking purely at Maneuver frequency.")
         elif sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']) > 0.1:
-            tab5.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have occured {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}]. However, :orange[{round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period], while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
-        else: tab5.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have occured {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}]. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
+            tab5.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have been observed by {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}]. However, :orange[{round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period], while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
+        else: tab5.write(f"E/W maneuver average time interval is {ewtime_bootstrap} seconds, meaning its next E/W maneuver :red[should have been observed by {ewmnvrs['Date/Time (UTC)'].iloc[-1]+ ew_boot_deltaobj}]. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
 
 
         #This starts with a brief expository but really is the outcome of all the work we just did,
@@ -1173,10 +1175,10 @@ if submission:
         #at time relative to the last maneuver(nsmnvrs['Date/Time (UTC)'].iloc[-1]) and the mean of how 
         #frequently the vehicle maneuvers (ns_boot_deltaobj).
         if nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj > datetime.now():
-            tab5.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :green[should occur around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}], looking purely at Maneuver frequency.")
+            tab5.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :green[should be observed by around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}], looking purely at Maneuver frequency.")
         elif sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']) > 0.1:
-            tab5.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :red[should have occured around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}], looking purely at maneuver frequency; However, :orange[{round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period], while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
-        else: tab5.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :red[should have occured {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}], looking purely at maneuver frequency. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
+            tab5.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :red[should have been observed by around {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}], looking purely at maneuver frequency; However, :orange[{round((sum(sat_mnvr_df['Checkout Period'])/sum(sat_mnvr_df['Maneuver Detected']))*100,1)}% of the detected maneuvers occurred during the vehicles Check-out period], while it's still trying to initialize it's intended trajectory. This estimation is likely to vary greatly once nominal pattern of life maneuvers for the satellite has been established. For higher fidelity, continue to the Maneuver Prediction section, however, be warned that until more data is collected that reflects the satellites normal operations, predictions of their behavior are liable to change drastically.")
+        else: tab5.write(f"N/S maneuver average time interval is {nstime_bootstrap} seconds, suggesting its next N/S maneuver :red[should have been observed by {nsmnvrs['Date/Time (UTC)'].iloc[-1]+ ns_boot_deltaobj}], looking purely at maneuver frequency. This departure from the previously established norms suggests that the vehicles mission may have changed or that it is nearing end-of-life and has limited fuel to maintain it's orbit.")
 
 
 
@@ -1348,57 +1350,6 @@ if submission:
         #the chosen vehicles likelihood to maneuver.  
         tab6.header("Hypothesis Test Summary")
         tab6.write(f"In summation, based on the available data for {sat_name}, of the 20 total tests run against different Classical Orbital Elements and their changes, with :orange[{len(nsdependencies)} total significant parameters] of 10 possible, the Classical Orbital Elements that can best be used to determine N/S Maneuvers are :orange[{nsdependencies}], whereas with :red[{len(ewdependencies)} total significant parameters] of 10 possible, the factors that can be best used to determine E/W Maneuvers are :red[{ewdependencies}].")
-
-                #begin brf updates
-
-        sat_mnvr_df["Time"] = None
-        for i in range(len(sat_mnvr_df["Date/Time (UTC)"])):
-            sat_mnvr_df["Time"].iloc[i] = sat_mnvr_df["Date/Time (UTC)"].iloc[i].time()
-
-        sat_mnvr_df['Time Between obs'] = None
-        for i in range(1,len(sat_mnvr_df['Date/Time (UTC)'])):
-            sat_mnvr_df['Time Between obs'].iloc[i] = abs(sat_mnvr_df['Date/Time (UTC)'].iloc[i] - sat_mnvr_df['Date/Time (UTC)'].iloc[i-1]).total_seconds()
-
-        tletime_bootstrap = np.mean(bootstrap_bill(sat_mnvr_df['Time Between obs']))
-        tle_boot_deltaobj = timedelta(seconds=tletime_bootstrap)
-
-        justDateTime = []
-        for timeobj in sat_mnvr_df["Time"]:
-            if type(timeobj) != type(int)and type(timeobj) != type(float):
-                justDateTime.append(timeobj)
-# 
-        for i in range(len(justDateTime)):
-            justDateTime[i] = ((justDateTime[i].hour*60)+justDateTime[i].minute)/1440
-# 
-        for i in range(len(justDateTime)):
-            justDateTime[i] = round(justDateTime[i],2)
-
-
-        tab3.subheader("Observation Frequency")
-        tab3.write(f"The average observation frequency for {sat_name} is {round(tletime_bootstrap/3600,3)} hours with it's last published observation occurring at {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]}, meaning its next 5 observations :green[should be seen by] around \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*1)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*2)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*3)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*4)}, \n{sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*5)} respectively.")
-
-        #below in pockiet OA tab as well
-        print(f"E/W maneuver average time interval is {tletime_bootstrap} seconds, meaning its next 5 observations should occur at :green[should be observed by] around {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*1)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*2)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*3)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*4)}, {sat_mnvr_df['Date/Time (UTC)'].iloc[-1]+ (tle_boot_deltaobj*5)} respectively.")
-        dates = justDateTime
-        #Create the histogram
-
-        fig, ax = plt.subplots()
-
-        plt.hist(dates, bins=48)
-        # 
-        #dd labels and title
-        plt.xlabel('Time')
-        plt.ylabel('Frequency')
-        plt.title('Histogram of TLE Delivery')
-        # 
-        #Show the plot
-        tab3.pyplot(fig)
-
-        #kneejerk to tab three because I have the brain of a squirrel!
-
-
     except:
         st.header(":red[Awww, Fish Paste!]")
         st.write(f"Looks like {sat_name} doesn't have enough data for the tool to work properly or has been run too many times in too short a window to continue to populate! Please :orange[select another satellite of interest] or :green[try again in the future] as more data becomes available! If the application was just working recently for this satellite, you may need to wait 3 hours to view this satellite again!")
-
-
