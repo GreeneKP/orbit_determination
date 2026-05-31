@@ -45,7 +45,7 @@ def bootstrap_bill(array, num_bootstrap_samples=500):
 def fetch_csv_data(strinput):
     # initializing substrings
     sub1 = "var plotData = "
-    sub2 = '";\r\n  var color1'
+    sub2 = '";\n  var color1'
     
     # getting index of substrings
     idx1 = strinput.index(sub1)
