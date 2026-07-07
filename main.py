@@ -45,7 +45,7 @@ def bootstrap_bill(array, num_bootstrap_samples=500):
 def fetch_csv_data(strinput):
     # initializing substrings
     sub1 = "var plotData = "
-    sub2 = '";\n  var color1'
+    sub2 = '";\r\n  var color1'
     
     # getting index of substrings
     idx1 = strinput.index(sub1)
@@ -445,16 +445,13 @@ if submission:
         #malicious from NORAD's perspective. After getting that data, we use an above created function in
         #conjunction with StringIO to put the data we want in a format that can be read, then turn it into
         #our dataframe.
-        fetch_new_data = timestamp_difference > timedelta(hours=3)
-        if not fetch_new_data:
+        if timestamp_difference > timedelta(hours=3) or pd.read_csv("data/sat_pos_history.csv")['SATCAT Number'].iloc[0] != sat_num:
             try:
-                cached_satcat = pd.read_csv("data/sat_pos_history.csv")['SATCAT Number'].iloc[0]
-                fetch_new_data = cached_satcat != sat_num
-            except:
-                fetch_new_data = True
-        
-        if fetch_new_data:
-            zip_response = get(f"https://celestrak.org/NORAD/elements/graph-orbit-data.php?CATNR={sat_num}")
+                zip_response = get(f"https://celestrak.org/NORAD/elements/graph-orbit-data.php?CATNR={sat_num}", timeout=30)
+                zip_response.raise_for_status()
+            except Exception as e:
+                st.error(f"Could not reach CelesTrak ({e}). Try again in a moment, or check your internet connection.")
+                st.stop()
             data4csv = fetch_csv_data(zip_response.text)
             in_data = StringIO(data4csv)
             sat_mnvr_df = pd.read_csv(in_data,header=0,sep=',')
@@ -1358,7 +1355,6 @@ if submission:
         #the chosen vehicles likelihood to maneuver.  
         tab6.header("Hypothesis Test Summary")
         tab6.write(f"In summation, based on the available data for {sat_name}, of the 20 total tests run against different Classical Orbital Elements and their changes, with :orange[{len(nsdependencies)} total significant parameters] of 10 possible, the Classical Orbital Elements that can best be used to determine N/S Maneuvers are :orange[{nsdependencies}], whereas with :red[{len(ewdependencies)} total significant parameters] of 10 possible, the factors that can be best used to determine E/W Maneuvers are :red[{ewdependencies}].")
-    except Exception as e:
+    except:
         st.header(":red[Awww, Fish Paste!]")
         st.write(f"Looks like {sat_name} doesn't have enough data for the tool to work properly or has been run too many times in too short a window to continue to populate! Please :orange[select another satellite of interest] or :green[try again in the future] as more data becomes available! If the application was just working recently for this satellite, you may need to wait 3 hours to view this satellite again!")
-        st.write(f"\n**Debug Info:** {str(e)}")
