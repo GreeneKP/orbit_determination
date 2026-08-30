@@ -17,6 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 from requests import get
+from requests.exceptions import RequestException
 import time
 from datetime import datetime, timedelta
 from io import StringIO
@@ -57,9 +58,33 @@ def fetch_csv_data(strinput):
         res = res + strinput[idx]
 
     final_out = res.replace("|","\n")
-    
+
     # get result
     return final_out
+
+
+class CelesTrakUnavailableError(Exception):
+    pass
+
+
+#CelesTrak's dynamic orbit-data endpoint intermittently times out or returns 5xx under load.
+#This retries a few times with a short backoff before giving up, so a passing blip doesn't
+#crash the whole tool; if it still fails, the caller should point the user at another satellite.
+def fetch_celestrak(url, max_retries=3, timeout_seconds=20, backoff_seconds=3):
+    last_error = None
+    for attempt in range(max_retries):
+        try:
+            response = get(url, timeout=timeout_seconds)
+            if response.status_code == 200:
+                return response
+            last_error = f"HTTP {response.status_code}"
+        except RequestException as e:
+            last_error = e
+        if attempt < max_retries - 1:
+            time.sleep(backoff_seconds)
+    raise CelesTrakUnavailableError(
+        f"CelesTrak did not respond successfully after {max_retries} attempts (last error: {last_error})"
+    )
 
 
 #Given a string that represents time, in YYYY mm dd hh:mm:ss format,
@@ -454,7 +479,7 @@ if submission:
                 fetch_new_data = True
         
         if fetch_new_data:
-            zip_response = get(f"https://celestrak.org/NORAD/elements/graph-orbit-data.php?CATNR={sat_num}")
+            zip_response = fetch_celestrak(f"https://celestrak.org/NORAD/elements/graph-orbit-data.php?CATNR={sat_num}")
             data4csv = fetch_csv_data(zip_response.text)
             in_data = StringIO(data4csv)
             sat_mnvr_df = pd.read_csv(in_data,header=0,sep=',')
@@ -1358,6 +1383,10 @@ if submission:
         #the chosen vehicles likelihood to maneuver.  
         tab6.header("Hypothesis Test Summary")
         tab6.write(f"In summation, based on the available data for {sat_name}, of the 20 total tests run against different Classical Orbital Elements and their changes, with :orange[{len(nsdependencies)} total significant parameters] of 10 possible, the Classical Orbital Elements that can best be used to determine N/S Maneuvers are :orange[{nsdependencies}], whereas with :red[{len(ewdependencies)} total significant parameters] of 10 possible, the factors that can be best used to determine E/W Maneuvers are :red[{ewdependencies}].")
+    except CelesTrakUnavailableError as e:
+        st.header(":red[CelesTrak Isn't Responding]")
+        st.write(f"We tried reaching CelesTrak's servers 3 times for {sat_name if 'sat_name' in locals() else 'this satellite'} and didn't get a successful response. This is almost always temporary congestion or rate-limiting on CelesTrak's end rather than a problem with this app. Please :orange[select a different satellite of interest] or :green[try this one again in a few minutes].")
+        st.write(f"\n**Debug Info:** {str(e)}")
     except Exception as e:
         st.header(":red[Awww, Fish Paste!]")
         st.write(f"Looks like {sat_name} doesn't have enough data for the tool to work properly or has been run too many times in too short a window to continue to populate! Please :orange[select another satellite of interest] or :green[try again in the future] as more data becomes available! If the application was just working recently for this satellite, you may need to wait 3 hours to view this satellite again!")
