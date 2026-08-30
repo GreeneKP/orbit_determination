@@ -67,21 +67,29 @@ class CelesTrakUnavailableError(Exception):
     pass
 
 
-#CelesTrak's dynamic orbit-data endpoint intermittently times out or returns 5xx under load.
-#This retries a few times with a short backoff before giving up, so a passing blip doesn't
-#crash the whole tool; if it still fails, the caller should point the user at another satellite.
-def fetch_celestrak(url, max_retries=3, timeout_seconds=20, backoff_seconds=3):
+#CelesTrak's dynamic orbit-data endpoint intermittently times out or returns 5xx under load,
+#at a rate that's unrelated to which satellite is being requested (confirmed via interleaved
+#testing, so this is just CelesTrak having a bad moment, not a per-satellite issue). This
+#retries a few times with a real gap between attempts so a passing blip doesn't crash the
+#whole tool; if it still fails after all attempts, the caller should point the user at
+#another satellite or ask them to try again shortly.
+def fetch_celestrak(url, max_retries=3, timeout_seconds=28, backoff_seconds=30):
+    status = st.empty()
     last_error = None
     for attempt in range(max_retries):
+        status.info(f"Contacting CelesTrak (attempt {attempt + 1} of {max_retries})...")
         try:
             response = get(url, timeout=timeout_seconds)
             if response.status_code == 200:
+                status.empty()
                 return response
             last_error = f"HTTP {response.status_code}"
         except RequestException as e:
             last_error = e
         if attempt < max_retries - 1:
+            status.warning(f"Attempt {attempt + 1} of {max_retries} failed ({last_error}). Retrying in {backoff_seconds} seconds...")
             time.sleep(backoff_seconds)
+    status.empty()
     raise CelesTrakUnavailableError(
         f"CelesTrak did not respond successfully after {max_retries} attempts (last error: {last_error})"
     )
