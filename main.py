@@ -19,6 +19,7 @@ import math
 from requests import get
 from requests.exceptions import RequestException
 import time
+import concurrent.futures
 from datetime import datetime, timedelta
 from io import StringIO
 import statistics as stats
@@ -76,14 +77,20 @@ class CelesTrakUnavailableError(Exception):
 def fetch_celestrak(url, max_retries=3, timeout_seconds=90, backoff_seconds=90):
     status = st.empty()
     for attempt in range(max_retries):
-        status.info(f"Contacting CelesTrak (attempt {attempt + 1} of {max_retries})...")
-        try:
-            response = get(url, timeout=timeout_seconds)
-            if response.status_code == 200:
-                status.empty()
-                return response
-        except RequestException:
-            pass
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(get, url, timeout=timeout_seconds)
+            for remaining in range(timeout_seconds, 0, -1):
+                if future.done():
+                    break
+                status.info(f"Contacting CelesTrak (attempt {attempt + 1} of {max_retries})... giving up in {remaining} seconds")
+                time.sleep(1)
+            try:
+                response = future.result()
+                if response.status_code == 200:
+                    status.empty()
+                    return response
+            except RequestException:
+                pass
         if attempt < max_retries - 1:
             for remaining in range(backoff_seconds, 0, -1):
                 status.warning(f"Attempt {attempt + 1} of {max_retries} failed. Retrying in {remaining} seconds...")
