@@ -73,9 +73,8 @@ class CelesTrakUnavailableError(Exception):
 #retries a few times with a real gap between attempts so a passing blip doesn't crash the
 #whole tool; if it still fails after all attempts, the caller should point the user at
 #another satellite or ask them to try again shortly.
-def fetch_celestrak(url, max_retries=3, timeout_seconds=28, backoff_seconds=30):
+def fetch_celestrak(url, max_retries=3, timeout_seconds=40, backoff_seconds=20):
     status = st.empty()
-    last_error = None
     for attempt in range(max_retries):
         status.info(f"Contacting CelesTrak (attempt {attempt + 1} of {max_retries})...")
         try:
@@ -83,16 +82,14 @@ def fetch_celestrak(url, max_retries=3, timeout_seconds=28, backoff_seconds=30):
             if response.status_code == 200:
                 status.empty()
                 return response
-            last_error = f"HTTP {response.status_code}"
-        except RequestException as e:
-            last_error = e
+        except RequestException:
+            pass
         if attempt < max_retries - 1:
-            status.warning(f"Attempt {attempt + 1} of {max_retries} failed ({last_error}). Retrying in {backoff_seconds} seconds...")
-            time.sleep(backoff_seconds)
+            for remaining in range(backoff_seconds, 0, -1):
+                status.warning(f"Attempt {attempt + 1} of {max_retries} failed. Retrying in {remaining} seconds...")
+                time.sleep(1)
     status.empty()
-    raise CelesTrakUnavailableError(
-        f"CelesTrak did not respond successfully after {max_retries} attempts (last error: {last_error})"
-    )
+    raise CelesTrakUnavailableError(f"CelesTrak did not respond successfully after {max_retries} attempts")
 
 
 #Given a string that represents time, in YYYY mm dd hh:mm:ss format,
@@ -1391,10 +1388,9 @@ if submission:
         #the chosen vehicles likelihood to maneuver.  
         tab6.header("Hypothesis Test Summary")
         tab6.write(f"In summation, based on the available data for {sat_name}, of the 20 total tests run against different Classical Orbital Elements and their changes, with :orange[{len(nsdependencies)} total significant parameters] of 10 possible, the Classical Orbital Elements that can best be used to determine N/S Maneuvers are :orange[{nsdependencies}], whereas with :red[{len(ewdependencies)} total significant parameters] of 10 possible, the factors that can be best used to determine E/W Maneuvers are :red[{ewdependencies}].")
-    except CelesTrakUnavailableError as e:
+    except CelesTrakUnavailableError:
         st.header(":red[CelesTrak Isn't Responding]")
         st.write(f"We tried reaching CelesTrak's servers 3 times for {sat_name if 'sat_name' in locals() else 'this satellite'} and didn't get a successful response. This is almost always temporary congestion or rate-limiting on CelesTrak's end rather than a problem with this app. Please :orange[select a different satellite of interest] or :green[try this one again in a few minutes].")
-        st.write(f"\n**Debug Info:** {str(e)}")
     except Exception as e:
         st.header(":red[Awww, Fish Paste!]")
         st.write(f"Looks like {sat_name} doesn't have enough data for the tool to work properly or has been run too many times in too short a window to continue to populate! Please :orange[select another satellite of interest] or :green[try again in the future] as more data becomes available! If the application was just working recently for this satellite, you may need to wait 3 hours to view this satellite again!")
