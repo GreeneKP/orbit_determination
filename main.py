@@ -73,7 +73,7 @@ class CelesTrakUnavailableError(Exception):
 #retries a few times with a real gap between attempts so a passing blip doesn't crash the
 #whole tool; if it still fails after all attempts, the caller should point the user at
 #another satellite or ask them to try again shortly.
-def fetch_celestrak(url, max_retries=3, timeout_seconds=40, backoff_seconds=20):
+def fetch_celestrak(url, max_retries=3, timeout_seconds=90, backoff_seconds=90):
     status = st.empty()
     for attempt in range(max_retries):
         status.info(f"Contacting CelesTrak (attempt {attempt + 1} of {max_retries})...")
