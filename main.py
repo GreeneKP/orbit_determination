@@ -298,16 +298,6 @@ sat_owner_set= {"AB":	"the Arab Satellite Communications Organization"
 #Setup done! Let's get started!
 
 
-#added this to start session timer; in retrospect I'll be caching databases and previously-run satellites 
-#in the session too, but for now I'll take my lickings for having not realized that streamlit wouldn't update
-#my github repository as it does locally. I know how to make this work in retrospect, but to use it to store my
-#dataframe and retroactively aler all my cleaning operations after reading would be to hefty of a time-sink this
-#late in the game. That's a'comin' later on this week though!
-if 'Timestamp' not in st.session_state:
-            st.session_state['Timestamp'] = datetime.now()   
-
-
-
 #Title of the app
 st.title("Satellite Maneuver Predictor")
 
@@ -320,26 +310,29 @@ st.title("Satellite Maneuver Predictor")
 #(3 hrs) to re-pull the data, per Dr. Kelso to avoid this being seen as a DDOS attack.
 #If the condition to pull a new file has been met, it not only reads the file, but also
 #immediately files it away to reset the 3-hour clock so we play nicely with our NORAD friends.
-#In retrospect, I'm finding the reason this works LOCALLY and not on streamlit is that Streamlit
-#cannot update Github. will be utilizing streamlit session state going froward as seen in the below 
-#timestamp sample.
+#Streamlit can't push these files back to Github, but it CAN write them to the server's own disk,
+#which is shared by everyone using the app, so the 'Timestamp' saved inside each file is the real
+#record of when CelesTrak was last asked. (The old session-state timer reset itself every 30 minutes,
+#so the 3-hour check never passed and stale files were reused indefinitely.)
+def cached_file_time(path):
+    try:
+        return pd.to_datetime(pd.read_csv(path)['Timestamp'].iloc[0]).to_pydatetime()
+    except Exception:
+        return None
 
-if datetime.now()-st.session_state['Timestamp']>timedelta(minutes=30):
-        st.session_state['Timestamp'] = datetime.now()
-
-#if local, use these, otherwise...
-#satcat_time = pd.read_csv("data/satcat.csv")['Timestamp'].iloc[0][:19]
-#date_format = '%Y-%m-%d %H:%M:%S'
-#new_time = datetime.strptime(satcat_time, date_format)
-
-new_time = st.session_state['Timestamp']
+new_time = cached_file_time("data/satcat.csv")
+if new_time is None or datetime.now() - new_time > timedelta(hours=3):
+    try:
+        satcat = pd.read_csv("https://celestrak.org/pub/satcat.csv")
+        new_time = datetime.now()
+        satcat['Timestamp'] = new_time
+        satcat.to_csv('data/satcat.csv',header=True,sep=',')
+    except Exception:
+        #CelesTrak hiccup; fall back to the catalog we already have on disk
+        satcat = pd.read_csv("data/satcat.csv")
+else: satcat = pd.read_csv("data/satcat.csv")
 
 timestamp_difference = datetime.now() - new_time
-if timestamp_difference > timedelta(hours=3):
-    satcat = pd.read_csv("https://celestrak.org/pub/satcat.csv")
-    satcat['Timestamp'] = datetime.now()
-    satcat.to_csv('data/satcat.csv',header=True,sep=',')
-else: satcat = pd.read_csv("data/satcat.csv")
 
 #little message to the user as to when then can see data from an updated Satellite Catalog
 #admittedly, the 3 hour window is pretty extreme for this one; the Satellite Catalog is only updated
@@ -482,13 +475,14 @@ if submission:
         #malicious from NORAD's perspective. After getting that data, we use an above created function in
         #conjunction with StringIO to put the data we want in a format that can be read, then turn it into
         #our dataframe.
-        fetch_new_data = timestamp_difference > timedelta(hours=3)
-        if not fetch_new_data:
-            try:
-                cached_satcat = pd.read_csv("data/sat_pos_history.csv")['SATCAT Number'].iloc[0]
-                fetch_new_data = cached_satcat != sat_num
-            except:
-                fetch_new_data = True
+        #Re-pull if the file on hand is for a different satellite OR was pulled more than 3 hours ago.
+        try:
+            cached_satcat = pd.read_csv("data/sat_pos_history.csv")['SATCAT Number'].iloc[0]
+            cached_time = cached_file_time("data/sat_pos_history.csv")
+            fetch_new_data = (cached_satcat != sat_num or cached_time is None
+                              or datetime.now() - cached_time > timedelta(hours=3))
+        except:
+            fetch_new_data = True
         
         if fetch_new_data:
             zip_response = fetch_celestrak(f"https://celestrak.org/NORAD/elements/graph-orbit-data.php?CATNR={sat_num}")
