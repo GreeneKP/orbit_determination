@@ -47,11 +47,13 @@ def bootstrap_bill(array, num_bootstrap_samples=500):
 def fetch_csv_data(strinput):
     # initializing substrings
     sub1 = "var plotData = "
-    sub2 = '";\n  var color1'
-    
+    sub2 = '";'
+
     # getting index of substrings
+    # (sub2 is searched for only after sub1: the closing quote of the plotData string. CelesTrak's
+    # page switched to \r\n line endings, which broke the old '";\n  var color1' marker.)
     idx1 = strinput.index(sub1)
-    idx2 = strinput.index(sub2)
+    idx2 = strinput.index(sub2, idx1 + len(sub1))
     
     res = ''
     # getting elements in between
@@ -327,8 +329,9 @@ if new_time is None or datetime.now() - new_time > timedelta(hours=3):
         new_time = datetime.now()
         satcat['Timestamp'] = new_time
         satcat.to_csv('data/satcat.csv',header=True,sep=',')
-    except Exception:
-        #CelesTrak hiccup; fall back to the catalog we already have on disk
+    except Exception as e:
+        #CelesTrak hiccup; fall back to the catalog we already have on disk, but say so
+        st.warning(f"Couldn't download a fresh Satellite Catalog from CelesTrak ({type(e).__name__}: {e}). Using the saved copy instead.")
         satcat = pd.read_csv("data/satcat.csv")
 else: satcat = pd.read_csv("data/satcat.csv")
 
